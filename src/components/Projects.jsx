@@ -9,25 +9,34 @@ import { BEAT, GROUP, beat } from "../lib/timing";
 /* Stacked full-width cards, one open at a time. The main project starts
    open; clicking another opens it and closes the one before. Merely
    pointing at a card does nothing — the cursor drives the dot field and
-   nothing else on the page. */
+   nothing else on the page.
+
+   The four are the team's own, and so are the words: name, standing, and
+   the one-line summary each project's repository carries on the
+   organisation. They read as TITLE and EXPLAIN before this, which is to say
+   the section that is meant to show the work showed none of it. */
 const PROJECTS = [
   {
-    label: "main project dg",
-    explain: "EXPLAIN",
+    name: "DataGSM",
+    label: "main project",
+    explain: "광주소프트웨어마이스터고등학교 OpenAPI & OAuth 플랫폼",
   },
   {
-    label: "sub project hg",
-    explain: "EXPLAIN",
+    name: "HelloGSM",
+    label: "sub project",
+    explain: "광주소프트웨어마이스터고 입학지원시스템",
     banner: hgBanner,
   },
   {
-    label: "sub project rg",
-    explain: "EXPLAIN",
+    name: "ReadyGSM",
+    label: "sub project",
+    explain: "광주소프트웨어마이스터고 학과체험 및 입학설명회 신청 서비스",
     banner: rgBanner,
   },
   {
-    label: "sub project eg",
-    explain: "EXPLAIN",
+    name: "EveryGSM",
+    label: "sub project",
+    explain: "광주소프트웨어마이스터고등학교의 모든 프로젝트를 한곳에",
     banner: egBanner,
   },
 ];
@@ -75,7 +84,7 @@ export default function Projects() {
           {PROJECTS.map((p, i) => {
             const isOpen = open === i;
             return (
-              <Reveal key={p.label} delay={beat(i, GROUP)} className="w-full">
+              <Reveal key={p.name} delay={beat(i, GROUP)} className="w-full">
                 <div
                   /* Click and tap open it; focus does the same, so the card
                      is reachable by keyboard. Hover deliberately does not —
@@ -148,11 +157,11 @@ export default function Projects() {
                     }`}
                   >
                     <Reveal
-                      as="p"
+                      as="h3"
                       delay={beat(i, GROUP)}
                       className="font-bold text-black text-title"
                     >
-                      TITLE
+                      {p.name}
                     </Reveal>
                     <Reveal
                       as="p"
