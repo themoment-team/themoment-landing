@@ -33,6 +33,19 @@ export default function Values() {
       className="relative bg-white w-full overflow-hidden"
     >
       <RevealGroup className="relative px-gutter py-section">
+        {/* The one section that opened straight into its content. Every
+            other one is announced — 더모먼트, Our Project, Contact Us — so
+            this read as three rows that had come loose from whatever they
+            belonged to, and the document outline had a section in it with no
+            name at all. Same treatment as Our Project, down to the brand
+            blue on the second word. */}
+        <Reveal
+          as="h2"
+          className="font-bold text-[#292b2f] text-display mb-block"
+        >
+          Our <span className="text-[#4A80F8]">Value</span>
+        </Reveal>
+
         <div className="flex flex-col gap-block">
           {/* One cue for all three rows, so they need their own offset —
               without it the rows are identical delays and arrive in perfect
