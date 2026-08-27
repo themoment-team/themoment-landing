@@ -112,10 +112,7 @@ body {
 
 .dot-field {
   position: absolute;
-  /* Inset by whatever the box it sits in asks for, and flush by default.
-     The bare fields down the page take the default: they are invisible
-     except where the pointer is, and an inset would clip the stroke short
-     of a section's edge for no visible gain. */
+  /* Inset by whatever the box it sits in asks for, and flush by default. */
   /* Offset and sized, rather than pinned by four insets. A canvas is a
      replaced element: with insets alone and width left to itself it falls
      back to its intrinsic 300x150 and the far insets are simply dropped,
@@ -140,8 +137,12 @@ body {
    Variants share one transition; the hidden state only exists when the
    visitor has not asked for reduced motion, so content is never trapped
    invisible. Never combine these with Tailwind's transition-* utilities
-   on the same element — put those on a child instead. */
+   on the same element — put those on a child instead.
 
+   reveal-fade is the default and the whole page below the hero: opacity and
+   nothing else. The travelling variants are what the hero uses. */
+
+.reveal-fade,
 .reveal-up,
 .reveal-left,
 .reveal-scale {
@@ -157,6 +158,7 @@ body {
   /* The starting state, and the only one an element is ever in before its
      cue. Reveals fire once, so nothing ever transitions back out of it —
      the zero duration only matters for the first paint. */
+  .reveal-fade:not(.is-in),
   .reveal-up:not(.is-in),
   .reveal-left:not(.is-in),
   .reveal-scale:not(.is-in) {
@@ -202,29 +204,6 @@ body {
     transition-duration: 0s;
     transform: translate(var(--fx), var(--fy)) rotate(var(--fr))
       skewX(var(--fk)) scale(var(--fs));
-  }
-}
-
-/* ---------- shattered glass ----------
-   Same idea as the wordmark facets, driven off the element's own box so it
-   works on any block. Each shard is a clipped copy of the content; releasing
-   the transforms slides the pieces back into one image. */
-
-.glass-shard {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  transition-property: transform, opacity;
-  transition-duration: var(--gd, 950ms), calc(var(--gd, 950ms) * 0.5);
-  transition-timing-function: cubic-bezier(0.25, 0.9, 0.3, 1), ease-out;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .glass-shard:not(.is-in) {
-    opacity: 0;
-    transition-duration: 0s;
-    transform: translate(var(--gx), var(--gy)) rotate(var(--gr))
-      skewX(var(--gk)) scale(var(--gs));
   }
 }
 

@@ -1,6 +1,6 @@
-/* Shared geometry for the shattered-glass treatment. The wordmark works in
-   its own SVG viewBox and Faceted works in percentages of an element box, so
-   the grid is generated in the unit square and each caller scales it. */
+/* Shared geometry for the shattered-glass treatment, which the hero wordmark
+   is now the only thing to use. It works in its own SVG viewBox, so the grid
+   is generated in the unit square and the caller scales it. */
 
 export function rnd(i) {
   const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;

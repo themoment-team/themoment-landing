@@ -1,5 +1,3 @@
-import DotField from "./DotField";
-import Faceted from "./Faceted";
 import Reveal from "./Reveal";
 import RevealGroup from "./RevealGroup";
 import { BEAT, GROUP, beat } from "../lib/timing";
@@ -25,11 +23,7 @@ const PHILOSOPHY = [
 export default function Intro() {
   return (
     <section id="about" className="relative bg-white w-full overflow-hidden">
-      <DotField bare on />
-      {/* Positioned, so it sits above the canvas — an absolutely positioned
-          element paints over in-flow content whatever the DOM order.
-
-          The hero's whole join lives here: the hero has no bottom padding to
+      {/* The hero's whole join lives here: the hero has no bottom padding to
           give, so this padding is the entire gap between the wordmark and
           this section. See --spacing-seam for why it is shorter than the
           page's other joins rather than equal to them. */}
@@ -41,16 +35,16 @@ export default function Intro() {
             headings, because with no h2 above it that is what it is — this
             section's heading. The line over it is its standfirst. */}
         <div>
-          <Faceted as="p" className="font-bold text-[#292b2f] text-lead">
+          <Reveal as="p" className="font-bold text-[#292b2f] text-lead">
             광주소프트웨어마이스터고 학생 개발팀
-          </Faceted>
-          <Faceted
+          </Reveal>
+          <Reveal
             as="p"
             delay={BEAT}
-            className="font-bold text-[#4a80f8] text-display"
+            className="font-bold text-[#4A80F8] text-display"
           >
             더모먼트
-          </Faceted>
+          </Reveal>
         </div>
 
         {/* Run to the gutters, and set at the lead size to carry the width.
@@ -63,19 +57,18 @@ export default function Intro() {
             rather than at an edge chosen for a desktop. */}
         <div className="font-normal text-[#292b2f] text-subtitle mt-stack">
           {PHILOSOPHY.map((block, i) => (
-            <Faceted
+            <Reveal
               as="p"
               key={i}
-              density="coarse"
               delay={beat(i, GROUP)}
               className="mb-4 last:mb-0"
             >
               {block.line}
               {block.mark ? (
-                <span className="font-bold text-[#4a80f8]">{block.mark}</span>
+                <span className="font-bold text-[#4A80F8]">{block.mark}</span>
               ) : null}
               {block.tail}
-            </Faceted>
+            </Reveal>
           ))}
         </div>
 

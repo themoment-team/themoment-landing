@@ -95,12 +95,15 @@ export default function Hero() {
             <Reveal
               as="li"
               key={link.label}
+              /* The hero is the one place that still travels; everything
+                 below it fades. */
+              variant="reveal-up"
               delay={HERO.nav + i * BEAT}
               className="flex-1 min-w-0"
             >
               <a
                 href={link.href}
-                className="block w-full text-center px-2 py-2 text-[#292b2f] text-[clamp(14px,1.5vw,20px)] font-light whitespace-nowrap transition-colors duration-500 ease-out hover:text-[#4a80f8]"
+                className="block w-full text-center px-2 py-2 text-[#292b2f] text-[clamp(14px,1.5vw,20px)] font-light whitespace-nowrap transition-colors duration-500 ease-out hover:text-[#4A80F8]"
               >
                 {link.label}
               </a>

@@ -1,9 +1,11 @@
 import useInView from "../hooks/useInView";
 import { useRevealGroup } from "../lib/revealGroup";
 
+/* Fades in on its cue. The other variants add travel to that fade and are
+   opt-in — the page below the hero asks for a plain fade throughout. */
 export default function Reveal({
   as: Tag = "div",
-  variant = "reveal-up",
+  variant = "reveal-fade",
   delay = 0,
   threshold,
   className = "",

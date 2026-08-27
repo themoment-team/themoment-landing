@@ -1,7 +1,7 @@
 import useInView from "../hooks/useInView";
 import { RevealGroupContext } from "../lib/revealGroup";
 
-/* Watches once for everything inside it. Reveal and Faceted pick the cue up
+/* Watches once for everything inside it. The Reveals inside pick the cue up
    through the context and skip their own observers, so a section arrives as
    one gesture with its own internal stagger rather than as a run of separate
    entrances.

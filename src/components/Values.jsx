@@ -1,5 +1,4 @@
-import DotField from "./DotField";
-import Faceted from "./Faceted";
+import Reveal from "./Reveal";
 import RevealGroup from "./RevealGroup";
 import { GROUP, beat } from "../lib/timing";
 
@@ -33,7 +32,6 @@ export default function Values() {
       id="service"
       className="relative bg-white w-full overflow-hidden"
     >
-      <DotField bare on />
       <RevealGroup className="relative px-gutter py-section">
         <div className="flex flex-col gap-block">
           {/* One cue for all three rows, so they need their own offset —
@@ -44,39 +42,36 @@ export default function Values() {
               key={v.num}
               className="w-full flex flex-col lg:flex-row items-start justify-between gap-stack"
             >
-              <Faceted
+              <Reveal
                 as="p"
-                density="wide"
                 delay={beat(0, i * GROUP)}
-                className="font-bold text-[#4a80f8] text-lead shrink-0"
+                className="font-bold text-[#4A80F8] text-lead shrink-0"
               >
                 {v.tag}
-              </Faceted>
+              </Reveal>
               <div className="flex gap-stack items-start w-full lg:w-auto">
-                <Faceted
+                <Reveal
                   as="p"
-                  density="coarse"
                   delay={beat(1, i * GROUP)}
                   className="font-bold text-[#e9e9e9] text-title shrink-0"
                 >
                   {v.num}
-                </Faceted>
+                </Reveal>
                 <div className="flex flex-col gap-stack min-w-0">
-                  <Faceted
+                  <Reveal
                     as="p"
                     delay={beat(2, i * GROUP)}
                     className="font-bold text-[#292b2f] text-lead max-w-[688px]"
                   >
                     {v.title}
-                  </Faceted>
-                  <Faceted
+                  </Reveal>
+                  <Reveal
                     as="p"
-                    density="coarse"
                     delay={beat(3, i * GROUP)}
                     className="font-semibold text-[#555962] text-body"
                   >
                     {v.sub}
-                  </Faceted>
+                  </Reveal>
                 </div>
               </div>
             </div>

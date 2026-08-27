@@ -1,6 +1,4 @@
 import { useState } from "react";
-import DotField from "./DotField";
-import Faceted from "./Faceted";
 import Reveal from "./Reveal";
 import RevealGroup from "./RevealGroup";
 import { BEAT, GROUP, beat } from "../lib/timing";
@@ -31,20 +29,19 @@ export default function Contact() {
   const inputClass =
     "bg-[#f5f5f5] w-full px-4 py-3 font-bold text-[#292b2f] text-body outline-none " +
     "border border-transparent transition-colors duration-500 ease-out " +
-    "focus:border-[#4a80f8] focus:bg-white placeholder:text-[#292b2f] placeholder:opacity-40";
+    "focus:border-[#4A80F8] focus:bg-white placeholder:text-[#292b2f] placeholder:opacity-40";
 
   return (
     <section id="contact" className="relative bg-white w-full overflow-hidden">
-      <DotField bare on />
       {/* Stacked and left aligned, the way every other section reads. It was
           two columns centred against each other, which put the short heading
           in the middle of the tall form's height — so the section opened on
           259px of nothing above the heading, and the join above it came out
           at twice the page's other seams. */}
       <RevealGroup className="relative px-gutter py-section flex flex-col items-start gap-block">
-        <Faceted as="h2" className="font-bold text-[#292b2f] text-display">
-          Contact <span className="text-[#4a80f8]">Us</span>
-        </Faceted>
+        <Reveal as="h2" className="font-bold text-[#292b2f] text-display">
+          Contact <span className="text-[#4A80F8]">Us</span>
+        </Reveal>
 
         <form
           onSubmit={handleSubmit}
@@ -58,23 +55,21 @@ export default function Contact() {
                 delay={beat(i, GROUP)}
                 className="flex flex-col gap-2 w-full"
               >
-                <Faceted
+                <Reveal
                   as="label"
                   htmlFor={id}
-                  density="wide"
                   delay={beat(i, GROUP)}
                   className="font-bold text-[#292b2f] text-label"
                 >
                   {field.title}
-                </Faceted>
-                <Faceted
+                </Reveal>
+                <Reveal
                   as="p"
-                  density="wide"
                   delay={beat(i, GROUP) + BEAT}
                   className="font-normal text-[#555962] text-caption"
                 >
                   {field.sub}
-                </Faceted>
+                </Reveal>
                 {field.type === "textarea" ? (
                   <textarea
                     id={id}
@@ -105,14 +100,14 @@ export default function Contact() {
           <Reveal delay={beat(3, GROUP)} className="flex items-center gap-4">
             <button
               type="submit"
-              className="bg-[#292b2f] text-white font-bold text-body px-8 py-4 transition-colors duration-500 ease-out hover:bg-[#4a80f8] focus-visible:bg-[#4a80f8] outline-none"
+              className="bg-[#292b2f] text-white font-bold text-body px-8 py-4 transition-colors duration-500 ease-out hover:bg-[#4A80F8] focus-visible:bg-[#4A80F8] outline-none"
             >
               Send
             </button>
             <p
               role="status"
               aria-live="polite"
-              className={`font-semibold text-caption text-[#4a80f8] transition-opacity duration-500 ease-out ${
+              className={`font-semibold text-caption text-[#4A80F8] transition-opacity duration-500 ease-out ${
                 status === "sent" ? "opacity-100" : "opacity-0"
               }`}
             >

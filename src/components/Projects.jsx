@@ -2,14 +2,14 @@ import { useState } from "react";
 import egBanner from "../assets/EG_Banner.webp";
 import hgBanner from "../assets/HG_Banner.webp";
 import rgBanner from "../assets/RG_Banner.webp";
-import DotField from "./DotField";
-import Faceted from "./Faceted";
 import Reveal from "./Reveal";
 import RevealGroup from "./RevealGroup";
 import { BEAT, GROUP, beat } from "../lib/timing";
 
 /* Stacked full-width cards, one open at a time. The main project starts
-   open; pointing at another opens it and closes the one before. */
+   open; clicking another opens it and closes the one before. Merely
+   pointing at a card does nothing — the cursor drives the dot field and
+   nothing else on the page. */
 const PROJECTS = [
   {
     label: "main project dg",
@@ -55,21 +55,20 @@ const cardClass =
   "relative flex flex-col items-start gap-3 bg-[#d9d9d9] p-6 sm:p-8 w-full " +
   "overflow-hidden cursor-pointer outline-none " +
   "transition-[height] duration-700 ease-out " +
-  "focus-visible:ring-2 focus-visible:ring-[#4a80f8] focus-visible:ring-offset-2";
+  "focus-visible:ring-2 focus-visible:ring-[#4A80F8] focus-visible:ring-offset-2";
 
 export default function Projects() {
   const [open, setOpen] = useState(0);
 
   return (
     <section id="work" className="relative bg-white w-full overflow-hidden">
-      <DotField bare on />
       <RevealGroup className="relative px-gutter py-section">
-        <Faceted
+        <Reveal
           as="h2"
           className="font-bold text-[#292b2f] text-display mb-block"
         >
-          Our <span className="text-[#4a80f8]">Project</span>
-        </Faceted>
+          Our <span className="text-[#4A80F8]">Project</span>
+        </Reveal>
 
         {/* The container the cards measure their open height against. */}
         <div className="@container flex flex-col gap-5">
@@ -78,11 +77,10 @@ export default function Projects() {
             return (
               <Reveal key={p.label} delay={beat(i, GROUP)} className="w-full">
                 <div
-                  /* Focus opens it too, so the card is reachable by keyboard,
-                     and the tap handler covers touch, where hover never
-                     fires. */
+                  /* Click and tap open it; focus does the same, so the card
+                     is reachable by keyboard. Hover deliberately does not —
+                     cards used to open as the cursor passed over them. */
                   tabIndex={0}
-                  onMouseEnter={() => setOpen(i)}
                   onFocus={() => setOpen(i)}
                   onClick={() => setOpen(i)}
                   className={`${cardClass} ${isOpen ? OPEN_HEIGHT : SHUT_HEIGHT}`}
@@ -135,29 +133,27 @@ export default function Projects() {
                       p.banner && isOpen ? "opacity-0" : "opacity-100"
                     }`}
                   >
-                    <Faceted
+                    <Reveal
                       as="p"
                       delay={beat(i, GROUP)}
                       className="font-bold text-black text-title"
                     >
                       TITLE
-                    </Faceted>
-                    <Faceted
+                    </Reveal>
+                    <Reveal
                       as="p"
-                      density="wide"
                       delay={beat(i, GROUP) + BEAT}
                       className="font-bold text-black text-label"
                     >
                       {p.label}
-                    </Faceted>
-                    <Faceted
+                    </Reveal>
+                    <Reveal
                       as="p"
-                      density="coarse"
                       delay={beat(i, GROUP) + 2 * BEAT}
                       className="font-semibold text-[#555962] text-body"
                     >
                       {p.explain}
-                    </Faceted>
+                    </Reveal>
                   </div>
                 </div>
               </Reveal>

@@ -1,4 +1,3 @@
-import Faceted from "./Faceted";
 import Reveal from "./Reveal";
 import { GROUP, beat } from "../lib/timing";
 
@@ -21,39 +20,36 @@ export default function Footer() {
   return (
     <footer className="relative w-full flex flex-col lg:flex-row">
       <div className="flex-1 bg-[#292b2f] px-gutter py-section">
-        <Faceted as="p" className="font-bold text-white text-title">
+        <Reveal as="p" className="font-bold text-white text-title">
           THE MOMENT
-        </Faceted>
-        <Faceted
+        </Reveal>
+        <Reveal
           as="p"
-          density="coarse"
           delay={beat(1)}
           className="font-bold text-[#9aa0ab] text-subtitle mt-4"
         >
           A development partner innovating the moment.
-        </Faceted>
-        <Faceted
+        </Reveal>
+        <Reveal
           as="p"
-          density="wide"
           delay={beat(2)}
           className="font-normal text-[#767c87] text-caption mt-block"
         >
           © 2026 the_moment. All rights reserved.
-        </Faceted>
+        </Reveal>
       </div>
 
       <Reveal
         delay={GROUP}
-        className="lg:w-[38%] bg-[#4a80f8] px-gutter py-section flex gap-block"
+        className="lg:w-[38%] bg-[#4A80F8] px-gutter py-section flex gap-block"
       >
         <div className="flex flex-col gap-stack">
-          <Faceted
+          <Reveal
             as="p"
-            density="wide"
             className="font-normal text-[#cfdcff] text-caption"
           >
             SOCIAL
-          </Faceted>
+          </Reveal>
           <div className="flex flex-col gap-stack">
             {SOCIAL_LINKS.map((link, i) => (
               <a
@@ -70,13 +66,12 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-col gap-stack">
-          <Faceted
+          <Reveal
             as="p"
-            density="wide"
             className="font-normal text-[#cfdcff] text-caption"
           >
             LEGAL
-          </Faceted>
+          </Reveal>
           <div className="flex flex-col gap-stack">
             {LEGAL_LINKS.map((link) => (
               <a key={link.label} href={link.href} className={linkClass}>
