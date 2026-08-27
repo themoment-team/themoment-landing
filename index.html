@@ -44,9 +44,21 @@
     <meta name="theme-color" content="#292b2f" />
 
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- The variable font, cut into subsets by unicode range, rather than the
+         static family. Static Pretendard ships one file per weight covering
+         every glyph it knows: 748KB for Regular, 767 for SemiBold, 773 for
+         Bold, and the same again for the Light the navigation is set in —
+         three megabytes of font for a page whose own code is 230KB. None of
+         it is subsetted, so a visitor downloads every Hanja and every Latin
+         glyph to read a screen of Korean.
+
+         The variable file carries 45 to 920 in one family and the stylesheet
+         splits it into 92 ranges, so only the ranges a page actually uses
+         come down. It sets font-display: swap itself, which is also what
+         stops the text hiding while the font arrives. -->
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
     />
   </head>
   <body>

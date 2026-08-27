@@ -54,7 +54,8 @@
 }
 
 :root {
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
   scroll-behavior: smooth;
 }
 
