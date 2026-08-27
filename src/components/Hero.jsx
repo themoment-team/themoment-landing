@@ -131,9 +131,15 @@ export default function Hero() {
       </div>
 
       <div className="relative shrink-0 w-full pb-[2.19%]">
-        <div className="relative w-full aspect-[1440/159]">
+        {/* The page's one h1. The mark is artwork and stays artwork — the
+            heading takes its accessible name from the svg's own aria-label,
+            so a screen reader hears THE MOMENT where a browser draws it, and
+            the document finally has a heading over the two it already had
+            further down. Tailwind's reset leaves h1 with no size or margin of
+            its own, so this is the same box it was. */}
+        <h1 className="relative w-full aspect-[1440/159]">
           <Wordmark delay={HERO.mark} />
-        </div>
+        </h1>
       </div>
     </section>
   );

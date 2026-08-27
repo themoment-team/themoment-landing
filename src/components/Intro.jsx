@@ -32,14 +32,14 @@ export default function Intro() {
             name, the name carrying the section on its own.
 
             The name takes the display size the other sections give their
-            headings, because with no h2 above it that is what it is — this
-            section's heading. The line over it is its standfirst. */}
+            headings, because it is this section's heading. The line over it
+            is its standfirst, and stays a paragraph. */}
         <div>
           <Reveal as="p" className="font-bold text-[#292b2f] text-lead">
             광주소프트웨어마이스터고 학생 개발팀
           </Reveal>
           <Reveal
-            as="p"
+            as="h2"
             delay={BEAT}
             className="font-bold text-[#4A80F8] text-display"
           >
