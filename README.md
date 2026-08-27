@@ -7,7 +7,7 @@
 - **Vite 8** + **React 19** (JSX)
 - **Tailwind CSS v4** (`@tailwindcss/postcss`)
 - **oxlint**
-- 폰트: Pretendard (jsDelivr CDN)
+- 폰트: Pretendard Variable, 유니코드 범위별 동적 서브셋 (jsDelivr CDN)
 
 ## 실행
 
@@ -27,20 +27,28 @@ npm run dev
 
 ```
 src/
-  App.jsx              섹션 조립
-  index.css            Tailwind 진입점 + 마퀴/리빌 애니메이션 정의
+  App.jsx              섹션 조립 (main 랜드마크 + 푸터)
+  index.css            Tailwind 진입점 + 리빌 / 세공면 애니메이션 정의
   hooks/useInView.js   스크롤 진입 감지 (IntersectionObserver, 1회성)
-  assets/              워드마크 · Union 로고 SVG
+  lib/
+    timing.js          히어로 · 섹션 타이밍 상수
+    wordmark.js        워드마크 글리프 패스와 세공면 기하
+    facets.js          세공면 격자 생성 (wordmark.js가 사용)
+    revealGroup.js     한 섹션을 한 번에 깨우는 컨텍스트
+  assets/              워드마크 · Union 로고 · 프로젝트 배너 3
   components/
     Reveal.jsx         진입 시 나타나는 래퍼
+    RevealGroup.jsx    섹션 하나를 한 신호로 묶는 래퍼
     Wordmark.jsx       THE MOMENT 워드마크 (삼각 세공면으로 분할된 인라인 SVG)
-    Brush.jsx          파란 M 붓터치 (획을 따라 그려지는 마스크)
-    Hero.jsx           #(top)    내비 + THE MOMENT 워드마크
-    Intro.jsx          #about    회사 소개 · 철학
-    Values.jsx         #service  마퀴 티커 + 핵심 가치 3
-    Projects.jsx       #work     프로젝트 카드
+    DotField.jsx       히어로 밴드의 점 격자 캔버스 (난류 + 포인터 자국)
+    Hero.jsx           #(top)    내비 + 점 밴드 + THE MOMENT 워드마크(h1)
+    Intro.jsx          #about    팀 소개 · 철학
+    Values.jsx         #service  Our Value — 핵심 가치 3
+    Projects.jsx       #work     Our Project — 프로젝트 카드 4
     Contact.jsx        #contact  문의 폼
     Footer.jsx                   푸터 (잉크 / 브랜드 블루 2분할)
+scripts/
+  og-card.html         공유 카드(public/og.png) 원본 — 재생성 방법은 파일 주석에
 ```
 
 ## 디자인 토큰
@@ -48,11 +56,11 @@ src/
 | 용도 | 값 |
 | --- | --- |
 | 본문 / 제목 | `#292b2f` |
-| 포인트 (블루) | `#4a80f8` |
+| 포인트 (블루) | `#4A80F8` |
 | 보조 텍스트 | `#555962` |
 | 연회색 (배경 텍스트) | `#e9e9e9` |
 | 카드 배경 | `#d9d9d9` |
-| 푸터 배경 | `#fbfbfb` |
+| 푸터 (좌 / 우) | `#292b2f` / `#4A80F8` |
 
 ## 여백 스케일
 
@@ -61,7 +69,7 @@ src/
 
 | 클래스 | 값 | 쓰는 곳 |
 | --- | --- | --- |
-| `px-gutter` | `48px` | 모든 섹션의 좌우 여백 |
+| `px-gutter` | `clamp(20px, 5vw, 48px)` | 모든 섹션의 좌우 여백 — 폰에서 20, 960px부터 48 |
 | `py-section` | `clamp(96px, 10vw, 180px)` | 모든 섹션의 상하 여백 |
 | `mb/mt/gap-block` | `clamp(48px, 6vw, 112px)` | 제목↔본문, 큰 덩어리 사이 |
 | `gap-stack` | `clamp(20px, 2.2vw, 40px)` | 한 덩어리 안의 항목 사이 |
@@ -75,8 +83,8 @@ Hero는 이 스케일 밖입니다.
 
 | 클래스 | 크기 | 쓰는 곳 |
 | --- | --- | --- |
-| `text-display` | `clamp(28px, 4.4vw, 64px)` | 섹션 제목, 더모먼트, 마퀴 |
-| `text-title` | `clamp(26px, 2.6vw, 36px)` | 카드 제목, 푸터 로고, 밸류 번호 |
+| `text-display` | `clamp(28px, 4.4vw, 64px)` | 섹션 제목, 더모먼트 |
+| `text-title` | `clamp(26px, 2.6vw, 36px)` | 프로젝트 이름(h3), 푸터 로고, 밸류 번호 |
 | `text-lead` | `clamp(20px, 2.2vw, 32px)` | 도입 문장, 밸류 본문 |
 | `text-subtitle` | `clamp(18px, 1.8vw, 24px)` | 푸터 태그라인 |
 | `text-label` | `20px` | 라벨, 링크, 카드 캡션 |
@@ -98,51 +106,17 @@ Hero는 이 스케일 밖입니다 — 워드마크는 글자가 아니라 아�
 
 | variant | 움직임 |
 | --- | --- |
-| `reveal-up` (기본) | 아래에서 위로 + 페이드 |
+| `reveal-fade` (기본) | 페이드만, 이동 없음 |
+| `reveal-up` | 아래에서 위로 + 페이드 |
 | `reveal-left` | 왼쪽에서 슬라이드 |
 | `reveal-scale` | 살짝 확대되며 페이드 |
 
-Hero는 진입 시 내비 → 붓터치 `M`(세공) → 워드마크 세공면 정렬 순으로 이어집니다.
+히어로 아래는 전부 기본값(`reveal-fade`)입니다. 이동을 쓰는 곳은 히어로 내비
+하나뿐이고, 거기서만 `variant="reveal-up"`을 이름으로 지정합니다.
+
+Hero는 진입 시 내비 · 워드마크 세공면 정렬 · 밴드 반전이 한 신호에서 갈라져
+나가고, 점 필드가 밴드가 어두워진 뒤 한 박자 늦게 올라옵니다.
 타이밍 상수는 [`Hero.jsx`](src/components/Hero.jsx) 상단에 모아 두었습니다.
-
-### 유리 파편 (`Faceted.jsx`)
-
-브랜드 컨셉은 **유리를 깨뜨리는 것 = 기존 상식을 깨는 것**입니다. 히어로
-워드마크에만 있던 그 처리를 어디에나 쓸 수 있게 뺐습니다.
-
-```jsx
-<Faceted as="h2" className="text-display font-bold">
-  Our <span className="text-[#4a80f8]">Project</span>
-</Faceted>
-```
-
-- SVG가 아니라 **CSS `clip-path` 퍼센트**입니다. `clip-path`도 `translate`도
-  요소 자기 박스 기준이라 크기와 무관하게 한 벌의 숫자로 동작합니다.
-- 내용을 **파편 수만큼 복제**합니다. `density`로 조절하세요.
-
-| density | 조각 수 | 쓰는 곳 |
-| --- | --- | --- |
-| `fine` (기본) | 20 | 섹션 제목, 큰 문구 |
-| `coarse` | 12 | 본문 단락, 중간 크기 |
-| `wide` | 8 | 한 줄짜리 라벨·캡션 |
-
-- **복제 비용을 알고 쓰세요.** 현재 페이지 기준 파편 876개, DOM 노드의 57%가
-  파편이고 **화면 텍스트의 약 84%가 중복된 사본**입니다. 검색엔진과 복사·붙여넣기가
-  이 중복을 봅니다(사본은 `aria-hidden` + `select-none`이라 스크린리더와 드래그
-  선택에서는 제외됩니다). 긴 본문일수록 `density`를 낮추는 게 효과가 큽니다.
-- SVG의 `<use>` 같은 참조가 HTML에는 없어서 복제는 이 기법의 구조적 한계입니다.
-  `Wordmark`가 저렴한 이유가 SVG라서입니다.
-- **인터랙티브 요소에는 쓰지 마세요.** 입력창·버튼·링크를 감싸면 컨트롤이
-  조각 수만큼 복제됩니다. 라벨처럼 컨트롤을 감싸는 태그는 괜찮습니다 — 바깥
-  태그는 하나로 유지되고 안쪽 텍스트만 복제됩니다.
-- 첫 번째 사본은 `opacity-0`으로 두어 레이아웃과 접근성 트리를 담당하고,
-  파편들은 `aria-hidden`입니다.
-- 파편은 자기 박스 바깥으로 크게 벗어나므로 `section`/`footer`에
-  `overflow-x: clip`이 걸려 있습니다. 없으면 등장할 때마다 가로 스크롤바가
-  생깁니다.
-
-기하는 [`src/lib/facets.js`](src/lib/facets.js)에서 `Wordmark`와 공유합니다.
-격자는 단위 정사각형에서 만들고 각자 자기 좌표계로 확대합니다.
 
 ### 워드마크 세공면 (`Wordmark.jsx`)
 
@@ -168,20 +142,21 @@ Hero는 진입 시 내비 → 붓터치 `M`(세공) → 워드마크 세공면 �
 정렬이 끝난 상태는 원본 워드마크와 픽셀 단위로 일치해야 합니다(2× 해상도에서
 누락 0px). 기하를 손볼 때 이 대조를 다시 하세요.
 
-### 붓터치 (`Brush.jsx`)
+### 점 필드 (`DotField.jsx`)
 
-`THE MOMENT`의 `M` 자리에 들어가는 파란 마크는 붓으로 그린 그림입니다.
-사각형으로 훑어 내리는 대신, 획의 중심선을 따라간 굵은 패스 3개
-(왼쪽 다리+꼬리 → 가운데 V → 오른쪽 다리)로 아트웍을 마스킹하고
-`stroke-dashoffset`을 0으로 보내 **실제로 칠하듯이** 나타냅니다.
+히어로의 어두운 밴드를 채우는 캔버스입니다. 격자는 고정이고 프레임마다 바뀌는
+것은 점 하나하나의 반지름·불투명도·색입니다.
 
-- 좌표는 아트웍 자체의 `217.825 × 209.331` viewBox 기준입니다.
-- `pathLength="1"`로 길이를 정규화해 `getTotalLength()` 없이 `strokeDasharray="1"`,
-  `stroke-dashoffset: 1 → 0`으로 제어합니다.
-- 마스크 그룹에 약한 `feGaussianBlur`를 걸어 획 끝이 번지듯 들어옵니다.
-- 획 폭은 붓이 가장 넓게 퍼지는 지점을 덮되 옆 획을 침범하지 않도록 개별 지정.
-  현재 설정으로 아트웍의 99.7%를 덮습니다 — 폭을 줄이면 붓의 일부가 영구히
-  잘리므로 중심선을 바꿀 때 함께 확인하세요.
+- **난류**: 도메인 워프된 능선 노이즈. 교차 사인파는 격자로 읽히는 간섭을 만들어
+  패턴처럼 보입니다. 목표값은 초당 30회만 계산하고 이징은 매 프레임 돌립니다 —
+  샘플링이 프레임 비용의 대부분이고, 눈에 보이는 것은 이징된 값입니다.
+- **스트로크**: 포인터가 지나간 경로에 스탬프를 찍고, 멈춰 있으면 `HOLD_STEP`
+  마다 같은 자리에 계속 찍습니다. 커서 밑에 원반을 따로 얹으면 원반과 획 사이에
+  양쪽보다 어두운 고리가 생깁니다 — 한 붓, 한 프로파일이어야 이음매가 없습니다.
+- 포인터 좌표는 client 기준으로 들고 매 프레임 캔버스 좌표로 바꿉니다. 손이
+  멈춰 있어도 페이지가 스크롤되면 캔버스가 커서 밑에서 미끄러집니다.
+- `bare` 모드(격자 없이 자국만)는 지금 아무 데서도 쓰지 않습니다. 커서에
+  반응하는 것은 히어로 하나뿐입니다.
 
 주의할 점:
 
@@ -198,17 +173,11 @@ Hero는 진입 시 내비 → 붓터치 `M`(세공) → 워드마크 세공면 �
 `prefers-reduced-motion: reduce`에서는 리빌의 숨김 상태 자체가 적용되지 않고
 마퀴와 부드러운 스크롤도 멈춥니다.
 
-### 재실행
+### 한 번만
 
-애니메이션은 일회성이 아닙니다. `useInView`가 관찰을 끊지 않고 계속 감시하며,
-섹션이 화면에서 완전히 벗어나면 숨김 상태로 되돌려 다음 방문에 다시 재생합니다.
-
-- 되돌리는 시점은 **완전히 화면 밖일 때**입니다. 트리거 선이 화면 아래쪽에서
-  조금 올라와 있어서, 교차가 끊기자마자 되돌리면 그 선 근처에서 스크롤할 때
-  깜빡입니다.
-- 되돌리기는 **즉시**여야 합니다. 지속시간·지연이 남아 있으면 애니메이션이
-  거꾸로 재생되는 게 보입니다. CSS는 `:not(.is-in)`에서 `transition-duration: 0s`,
-  인라인 지연·지속시간은 컴포넌트가 `inView`일 때만 넣습니다.
+리빌은 일회성입니다. `useInView`는 첫 교차에서 `disconnect()`하고 더 보지
+않습니다. 되돌아 올라올 때 다시 재생하면 사이트가 처음부터 시작하는 것처럼
+읽혀서, 페이지 전체를 등장이 아니라 열림으로 다룹니다.
 
 ## 스냅 스크롤 (보류)
 
@@ -225,10 +194,15 @@ Hero는 진입 시 내비 → 붓터치 `M`(세공) → 워드마크 세공면 �
 
 ## 남은 작업
 
-- `Projects` · `Awards` · `Contact` 섹션의 플레이스홀더(`TITLE` / `EXPLAIN` / `SUBEXPLAIN`) 실제 콘텐츠 입력
-- 내비의 `SERVICE` 항목은 전용 섹션이 없어 임시로 `Values`(`#service`)를 가리킴
-- `Contact` 폼 전송 백엔드 미연결 (현재는 클라이언트 검증 + 완료 표시까지)
-- 푸터 SOCIAL 링크 2개가 모두 `Instagram` 플레이스홀더 — 실제 채널/URL 필요
-#   t h e m o m e n t - l a n d i n g  
- #   t h e m o m e n t - l a n d i n g  
- 
+- `og:image` / `twitter:image`가 상대 경로입니다. 슬랙·디스코드는 해석하지만
+  페이스북·X는 절대 URL을 요구하므로, 배포 도메인이 정해지면 전체 URL로
+  바꿔야 합니다 ([`index.html`](index.html))
+- 문의 폼이 보낼 곳이 아직 없습니다. `.env`에 `VITE_CONTACT_ENDPOINT`를 넣으면
+  살아납니다 — 없으면 폼은 "연결 준비 중"이라고 말하고 버튼을 잠급니다
+  ([`.env.example`](.env.example))
+- 내비는 섹션 4개 중 3개만 가리킵니다. `Our Value`(`#service`)가 빠져 있는데,
+  내비 폭이 항목 3개 기준으로 잡혀 있어 넣으려면 히어로 쪽 결정이 필요합니다
+- `ReadyGSM` 설명이 레포마다 다릅니다. 카드는 client 레포의 문구(학과체험 및
+  입학설명회 신청)를 쓰고 있고, server 레포는 교외참여활동 관리라고 합니다
+- `<noscript>` 폴백이 섹션 카피를 사본으로 들고 있습니다. 섹션 문구를 바꾸면
+  같이 고쳐야 합니다 ([`index.html`](index.html))
