@@ -13,20 +13,24 @@ import { useEffect, useRef } from "react";
                  its fine irregular grain. Crossed sine waves cannot do this
                  — they interfere on a lattice you can read, and the result
                  reads as a pattern rather than as movement.
-     stroke      the pointer paints: moving lays stamps along the path it
-                 took, each opening the dots around it to full size and the
-                 brand blue, then closing them again.
+     stroke      the pointer paints: a pool of open dots sits under the
+                 cursor wherever it rests, and moving drags stamps along the
+                 path it took, each opening the dots around it to full size
+                 and the brand blue and then closing them again.
 
-   Nothing is anchored to where the pointer is, only to where it has been,
-   which is what lets the field go quiet on its own: a still hand lays no
-   stamps, the last ones run out, and the turbulence is all that is left.
+   So the field answers the pointer in two ways at once. The pool is anchored
+   to where the pointer is and does not run out, so a still hand still has
+   the field lit under it; the stamps are anchored to where it has been, and
+   those do run out, which is what leaves a wake trailing off behind a fast
+   hand rather than a disc dragged around.
 
    `bare` drops the lattice and keeps the pointer: no turbulence, and a dot
-   is drawn only where the stroke actually reaches it. That is the form the
-   rest of the page takes — the churning field belongs to the hero, but the
-   stroke should follow the pointer down the whole page. It is also most of
-   the cost, so a bare field skips its frame entirely while nothing is
-   live. */
+   is drawn only where the stroke actually reaches it. It is also most of the
+   cost, so a bare field skips its frame entirely while nothing is live.
+
+   Nothing renders one now. The sections down the page used to, so the stroke
+   followed the pointer the length of the site; the field belongs to the hero
+   alone, and everything below it is still under the cursor. */
 
 const SPACING = 24;
 
@@ -51,7 +55,7 @@ const A_MAX = 0.95;
    also brighter reads as lit. */
 const DIM = [96, 102, 112];
 const LIT = [206, 212, 222];
-const BRAND = [74, 128, 248];
+const BRAND = [74, 128, 248]; // #4A80F8
 
 /* ---------- turbulence ---------- */
 
@@ -154,6 +158,19 @@ const FLOW_SWING_HZ = 0.045; // a little over twenty seconds a cycle
    asking for. Short enough that the field does not lag behind its own flow,
    long enough that no dot can snap. */
 const SWELL_EASE = 0.04;
+/* How often the turbulence is asked what it wants, as against how often the
+   dots are drawn. Sampling it is nearly the whole cost of a frame — nine
+   noise lookups per dot, thirteen hundred dots on the hero band — and at
+   sixty a second the field spent most of the budget deciding on sizes that
+   the easing above then refuses to move to in one frame anyway.
+
+   Thirty is under SWELL_EASE, so no dot reaches a target before the next one
+   is set and none of them ever sits waiting: the eased value is still moving
+   every frame, which is what is actually on screen. Going to fifteen is
+   visible — the ease constant is 40ms and the wait is 67, so the field
+   arrives and pauses, and the flow starts to read as steps. */
+const TURB_HZ = 30;
+const TURB_STEP = 1 / TURB_HZ;
 const TAU = Math.PI * 2;
 /* Warping the sample point by another pair of noise fields is what curls the
    grain into filaments rather than blobs. The warp fields carry time too, so
@@ -197,15 +214,11 @@ function turbulence(x, y, t, fx, fy) {
 
 /* ---------- the stroke ---------- */
 
-/* The pointer paints. Moving lays down a run of stamps along the path it
-   actually took, each of which opens the dots around it and then closes
+/* The pointer paints. A pool of light sits under the cursor for as long as
+   it is over the field, and moving lays down a run of stamps along the path
+   it actually took, each of which opens the dots around it and then closes
    them again — so what you see is a brush stroke drawn through the field,
-   trailing off behind the cursor.
-
-   Nothing here is anchored to where the pointer is, only to where it has
-   been. A disc centred on the cursor keeps animating while the hand is
-   still; a trail of stamps runs out on its own, and a still pointer lays no
-   new ones, so the field goes quiet by itself.
+   trailing off behind the cursor and pooling wherever it stops.
 
    Stamps are laid every TRAIL_STEP px of travel rather than per event, so
    the stroke has the same density whether the hand is fast or slow. */
@@ -214,10 +227,30 @@ const TRAIL_RADIUS = 92;
 const TRAIL_LIFE = 0.5;
 /* Open quickly, close slowly. Without the attack a dot is simply at full
    size the instant the stamp lands, which reads as switching on rather than
-   as being painted over. */
-const TRAIL_ATTACK = 0.09;
+   as being painted over.
+
+   How long it takes is also how far behind the cursor the bright end of the
+   stroke sits: the newest stamps are the ones under the hand, and while
+   those are still opening, the brightest ink in the field is whatever was
+   laid an attack ago. At 90ms an ordinary flick left it most of a
+   fingertip behind, the stroke visibly trailing the pointer and then
+   catching up as the hand slowed. 35ms still opens rather than switches,
+   and it keeps the bright end under the cursor. */
+const TRAIL_ATTACK = 0.035;
 const R_TRAIL = 6.8;
 const A_TRAIL = 0.92;
+
+/* A hand that has stopped keeps laying stamps where it is, one every
+   HOLD_STEP, so resting under the pointer is the same brush doing the same
+   thing as drawing with it — only with nowhere new to put the ink. The wake
+   still runs out behind it; what is under the cursor is renewed.
+
+   This was a disc centred on the cursor, laid over the stamps. It read as a
+   light with a shadow around it: a disc falls off over its radius while a
+   stroke holds its strength the length of the path, so between the two sat
+   a ring darker than either — the field looking like it had come loose from
+   the pointer and caught up again. One brush, one profile, no seam. */
+const HOLD_STEP = 0.022;
 
 function bristle(age) {
   if (age < 0 || age >= TRAIL_LIFE) return 0;
@@ -306,6 +339,10 @@ export default function DotField({ on = false, bare = false, className = "" }) {
        may change size. */
     let ease = new Float32Array(0);
     let eased = false;
+    /* What the turbulence last asked of each dot, held between the frames
+       that do not ask it again. */
+    let want = new Float32Array(0);
+    let wantAt = -1;
     let blank = false;
     let dirty = true;
     /* Now that fields run the length of the page, one drawing off screen is
@@ -319,6 +356,17 @@ export default function DotField({ on = false, bare = false, className = "" }) {
     let lastX = 0;
     let lastY = 0;
     let seeded = false;
+    /* The pointer's last known place, in client coordinates rather than in
+       the canvas box: the box moves under it as the page scrolls, and a
+       position stored relative to the box would leave the pool behind on the
+       part of the section that has gone by. It is turned into box
+       coordinates once a frame instead. */
+    let clientX = 0;
+    let clientY = 0;
+    let hasCursor = false;
+    /* When the brush last put anything down, whether the hand moved it there
+       or it was simply still. */
+    let stampedAt = -1;
 
     const size = () => {
       const box = canvas.getBoundingClientRect();
@@ -335,11 +383,19 @@ export default function DotField({ on = false, bare = false, className = "" }) {
       stride = cols;
       paint = new Float32Array(cols * rows);
       ease = new Float32Array(cols * rows);
+      want = new Float32Array(cols * rows);
+      wantAt = -1;
       eased = false;
       dirty = true;
     };
 
     const move = (e) => {
+      /* Recorded before the visibility check: the pointer may well have
+         moved while this field was off screen, and the brush has to come
+         back down where it actually is rather than where it was last seen. */
+      clientX = e.clientX;
+      clientY = e.clientY;
+      hasCursor = true;
       if (!onScreen) return;
       const box = canvas.getBoundingClientRect();
       const nx = e.clientX - box.left;
@@ -370,40 +426,68 @@ export default function DotField({ on = false, bare = false, className = "" }) {
         }
         lastX = nx;
         lastY = ny;
+        stampedAt = born;
       }
       dirty = true;
+    };
+
+    /* Only a pointer that has left the document, not one crossing between
+       two elements inside it — pointerout fires for both, and the one that
+       leaves has nothing on the other side of it. */
+    const out = (e) => {
+      if (!e.relatedTarget) hasCursor = false;
     };
 
     /* Lay the live stamps onto the lattice grid. Each takes the strongest
        rather than the sum, so overlapping stamps along one stroke give an
        even band instead of a bright seam wherever the hand slowed down. */
-    const layStroke = (t) => {
-      paint.fill(0);
-      for (const s of trail) {
-        const env = bristle(t - s.born);
-        if (env <= 0) continue;
-        const c0 = Math.max(0, Math.floor((s.x - TRAIL_RADIUS) / stepX - 0.5));
-        const c1 = Math.min(cols - 1, Math.ceil((s.x + TRAIL_RADIUS) / stepX - 0.5));
-        const r0 = Math.max(0, Math.floor((s.y - TRAIL_RADIUS) / stepY - 0.5));
-        const r1 = Math.min(rows - 1, Math.ceil((s.y + TRAIL_RADIUS) / stepY - 0.5));
-        for (let row = r0; row <= r1; row++) {
-          const dy = (row + 0.5) * stepY - s.y;
-          for (let col = c0; col <= c1; col++) {
-            const dx = (col + 0.5) * stepX - s.x;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d >= TRAIL_RADIUS) continue;
-            const f = 1 - d / TRAIL_RADIUS;
-            const e = f * f * (3 - 2 * f) * env;
-            const i = row * stride + col;
-            if (e > paint[i]) paint[i] = e;
-          }
+    const splat = (x, y, radius, env) => {
+      if (env <= 0) return;
+      const c0 = Math.max(0, Math.floor((x - radius) / stepX - 0.5));
+      const c1 = Math.min(cols - 1, Math.ceil((x + radius) / stepX - 0.5));
+      const r0 = Math.max(0, Math.floor((y - radius) / stepY - 0.5));
+      const r1 = Math.min(rows - 1, Math.ceil((y + radius) / stepY - 0.5));
+      for (let row = r0; row <= r1; row++) {
+        const dy = (row + 0.5) * stepY - y;
+        for (let col = c0; col <= c1; col++) {
+          const dx = (col + 0.5) * stepX - x;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d >= radius) continue;
+          const f = 1 - d / radius;
+          const e = f * f * (3 - 2 * f) * env;
+          const i = row * stride + col;
+          if (e > paint[i]) paint[i] = e;
         }
       }
+    };
+
+    const layStroke = (t) => {
+      paint.fill(0);
+      for (const s of trail) splat(s.x, s.y, TRAIL_RADIUS, bristle(t - s.born));
     };
 
     const draw = (t, catchUp) => {
       ctx.clearRect(0, 0, w, h);
       layStroke(t);
+
+      /* Whether this is one of the frames that asks the turbulence. Every
+         frame still eases towards whatever it last said.
+
+         A deadline accumulated rather than a gap measured back from now.
+         Both of the obvious ways cost a third of the rate: asking for a full
+         step since the last ask leaves the frame that lands on the deadline
+         a whisker short, and setting the next deadline a step past the frame
+         that took it moves it past the one that should have. Either way only
+         every third frame qualifies and thirty a second comes out as
+         twenty-one. Adding the step to the deadline itself keeps the cadence
+         on alternate frames; the clamp is for a tab that has been away, so
+         it picks up from now rather than asking on every frame until it has
+         caught up with where it should have been. */
+      const ask = !bare && t >= wantAt;
+      if (ask) {
+        wantAt += TURB_STEP;
+        if (wantAt < t) wantAt = t + TURB_STEP;
+      }
 
       for (let row = 0; row < rows; row++) {
         const y = (row + 0.5) * stepY;
@@ -425,17 +509,21 @@ export default function DotField({ on = false, bare = false, className = "" }) {
           let swell = 1;
 
           if (!bare) {
-            const n = TURB_FLOOR + turbulence(x, y, t, flowX, flowY) * TURB_SPAN;
-            const c = Math.min(1, Math.max(0, n));
-            /* Smoothstepped twice. One pass leaves most of the field in its
-               middle, where a dot is never much bigger than its neighbour
-               and the grain reads as uniform however wide the range is; the
-               second pass pushes each side of the midpoint towards its own
-               end, so contraction and expansion separate. Raising the gain
-               instead would do it by clipping, which flattens the crests
-               into one plateau and loses the shape inside them. */
-            const s1 = c * c * (3 - 2 * c);
-            const target = s1 * s1 * (3 - 2 * s1);
+            if (ask) {
+              const n = TURB_FLOOR + turbulence(x, y, t, flowX, flowY) * TURB_SPAN;
+              const c = Math.min(1, Math.max(0, n));
+              /* Smoothstepped twice. One pass leaves most of the field in
+                 its middle, where a dot is never much bigger than its
+                 neighbour and the grain reads as uniform however wide the
+                 range is; the second pass pushes each side of the midpoint
+                 towards its own end, so contraction and expansion separate.
+                 Raising the gain instead would do it by clipping, which
+                 flattens the crests into one plateau and loses the shape
+                 inside them. */
+              const s1 = c * c * (3 - 2 * c);
+              want[cell] = s1 * s1 * (3 - 2 * s1);
+            }
+            const target = want[cell];
             swell = eased ? ease[cell] + (target - ease[cell]) * catchUp : target;
             ease[cell] = swell;
             /* Override, not addition: under the stroke a dot is this size
@@ -496,6 +584,33 @@ export default function DotField({ on = false, bare = false, className = "" }) {
         trail = trail.filter((s) => t - s.born <= TRAIL_LIFE);
       }
 
+      /* The brush goes on painting where it is. The box is read here rather
+         than in the pointer handler because the pointer can sit perfectly
+         still while the page scrolls under it, and the ink has to keep
+         landing under the cursor rather than on the piece of section that
+         happened to be there. */
+      if (hasCursor && t - stampedAt >= HOLD_STEP) {
+        const box = canvas.getBoundingClientRect();
+        const px = clientX - box.left;
+        const py = clientY - box.top;
+        /* A pointer just off the edge still reaches the dots inside it; one
+           further off than the stamp is wide reaches nothing, and a field
+           with nothing else to draw should know that rather than splatting
+           into empty ranges every frame. */
+        if (
+          px > -TRAIL_RADIUS &&
+          py > -TRAIL_RADIUS &&
+          px < w + TRAIL_RADIUS &&
+          py < h + TRAIL_RADIUS
+        ) {
+          trail.push({ x: px, y: py, born: t });
+          lastX = px;
+          lastY = py;
+          seeded = true;
+        }
+        stampedAt = t;
+      }
+
       /* A bare field has nothing of its own to animate, so with no stroke on
          it there is no frame to draw — one clear on the way down, then it
          costs nothing until the pointer comes back. */
@@ -527,12 +642,14 @@ export default function DotField({ on = false, bare = false, className = "" }) {
     );
     visible.observe(canvas);
     window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerout", out, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
       visible.disconnect();
       window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerout", out);
     };
   }, [on, bare]);
 
