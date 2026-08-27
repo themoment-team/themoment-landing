@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- The share card, drawn from the same wordmark paths the site uses, so the
+     two can never drift. It is not part of the build — Vite only builds
+     index.html — and the page is here to be photographed, not visited.
+
+     To redraw public/og.png after the mark or the copy changes, with the dev
+     server running:
+
+       chrome --headless=new --hide-scrollbars --force-device-scale-factor=1          --window-size=1200,630 --virtual-time-budget=5000          --screenshot=public/og.png http://localhost:5173/scripts/og-card.html
+
+     1200x630 is the size every platform crops from; the virtual time budget
+     is there so Pretendard has arrived before the shutter. -->
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>og card</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+    />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: #ffffff; }
+      body {
+        width: 1200px;
+        height: 630px;
+        font-family: "Pretendard", -apple-system, system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      .band { height: 88px; background: #292b2f; flex: none; }
+      .body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 116px; }
+      .standfirst { font-weight: 600; font-size: 30px; color: #555962; margin: 0 0 36px; }
+      .mark { width: 100%; display: block; }
+      .rule { height: 8px; background: #4A80F8; margin: 46px 0 0; }
+      .tag { font-weight: 400; font-size: 24px; color: #767c87; margin: 28px 0 0; }
+    </style>
+  </head>
+  <body>
+    <div class="band"></div>
+    <div class="body">
+      <p class="standfirst">광주소프트웨어마이스터고 학생 개발팀</p>
+      <svg class="mark" viewBox="0 0 1440 159" fill="none" xmlns="http://www.w3.org/2000/svg" id="mark"></svg>
+      <div class="rule"></div>
+      <p class="tag">A development partner innovating the moment.</p>
+    </div>
+    <script type="module">
+      import { LETTERS, BRAND_LETTER } from "/src/lib/wordmark.js";
+      const svg = document.getElementById("mark");
+      svg.innerHTML = LETTERS.map(
+        (d, i) => `<path d="${d}" fill="${i === BRAND_LETTER ? "#4A80F8" : "#292b2f"}"/>`,
+      ).join("");
+      document.fonts.ready.then(() => { document.documentElement.dataset.ready = "1"; });
+    </script>
+  </body>
+</html>

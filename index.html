@@ -22,7 +22,26 @@
       property="og:description"
       content="더모먼트는 현장에서 답을 찾는 개발 파트너입니다. 가장 필요한 곳에 가장 먼저 도착하는 기술로 더 나은 경험을 만듭니다."
     />
+    <!-- The card every platform crops to. Drawn by scripts/og-card.html from
+         the site's own wordmark paths, so a link posted anywhere carries the
+         mark rather than the blank a missing og:image leaves behind.
+
+         The path is relative because the site has no domain written down
+         anywhere in the repo yet. Slack and Discord resolve that; Facebook
+         and X want it absolute, so make these the full URL once the domain
+         is settled. -->
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="THE MOMENT — 광주소프트웨어마이스터고 학생 개발팀"
+    />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/og.png" />
+    <!-- The ink the hero band turns, so a mobile browser's chrome carries the
+         page's colour rather than sitting white above it. -->
+    <meta name="theme-color" content="#292b2f" />
 
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link
