@@ -3,10 +3,38 @@ import Reveal from "./Reveal";
 import RevealGroup from "./RevealGroup";
 import { BEAT, GROUP, beat } from "../lib/timing";
 
+/* Three fields, each with the line under it that says what the field is
+   for. They read TITLE and SUBEXPLAIN before this, over a box whose
+   placeholder was the word Form — nothing on the form said what any of it
+   wanted, and a visitor filling it in was guessing.
+
+   autoComplete is what lets a browser fill the first two from what it
+   already knows about the person, which is the difference between a form
+   answered in a second and one typed out. */
 const FIELDS = [
-  { key: "name", type: "text", title: "TITLE", sub: "SUBEXPLAIN" },
-  { key: "email", type: "email", title: "TITLE", sub: "SUBEXPLAIN" },
-  { key: "message", type: "textarea", title: "TITLE", sub: "SUBEXPLAIN" },
+  {
+    key: "name",
+    type: "text",
+    autoComplete: "name",
+    title: "이름",
+    sub: "어떻게 불러드리면 될지 알려주세요.",
+    placeholder: "홍길동",
+  },
+  {
+    key: "email",
+    type: "email",
+    autoComplete: "email",
+    title: "이메일",
+    sub: "답변을 받으실 주소입니다.",
+    placeholder: "name@example.com",
+  },
+  {
+    key: "message",
+    type: "textarea",
+    title: "문의 내용",
+    sub: "어떤 일로 연락 주셨는지 편하게 적어주세요.",
+    placeholder: "제안하고 싶은 프로젝트, 협업 문의, 무엇이든 괜찮습니다.",
+  },
 ];
 
 const EMPTY = { name: "", email: "", message: "" };
@@ -86,6 +114,11 @@ export default function Contact() {
         >
           {FIELDS.map((field, i) => {
             const id = `contact-${field.key}`;
+            /* The line under the label describes the field, so the field has
+               to say so — left to itself it is a paragraph that happens to
+               sit nearby, and a screen reader moving between inputs never
+               reads it. */
+            const subId = `${id}-sub`;
             return (
               <Reveal
                 key={field.key}
@@ -102,6 +135,7 @@ export default function Contact() {
                 </Reveal>
                 <Reveal
                   as="p"
+                  id={subId}
                   delay={beat(i, GROUP) + BEAT}
                   className="font-normal text-[#555962] text-caption"
                 >
@@ -113,9 +147,10 @@ export default function Contact() {
                     name={field.key}
                     rows={5}
                     required
+                    aria-describedby={subId}
                     value={values[field.key]}
                     onChange={handleChange(field.key)}
-                    placeholder="Form"
+                    placeholder={field.placeholder}
                     className={`${inputClass} resize-y`}
                   />
                 ) : (
@@ -124,9 +159,11 @@ export default function Contact() {
                     name={field.key}
                     type={field.type}
                     required
+                    autoComplete={field.autoComplete}
+                    aria-describedby={subId}
                     value={values[field.key]}
                     onChange={handleChange(field.key)}
-                    placeholder="Form"
+                    placeholder={field.placeholder}
                     className={inputClass}
                   />
                 )}
