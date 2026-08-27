@@ -103,12 +103,26 @@ export default function Projects() {
                         src={p.banner}
                         alt=""
                         aria-hidden
+                        /* Fetched when the section comes within reach rather
+                           than with the page. The three banners are 569KB
+                           together and they were arriving 109ms into the load
+                           for a section that starts 2400px down — most of
+                           what the site weighs, spent before the visitor had
+                           seen the hero. The browser starts them well before
+                           they are in view, so scrolling still finds them
+                           there. */
+                        loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover object-top select-none pointer-events-none"
                       />
                       <img
                         src={p.banner}
                         alt=""
                         aria-hidden
+                        /* Same file as the layer under it, so this costs no
+                           second download either way. */
+                        loading="lazy"
+                        decoding="async"
                         className={`absolute inset-0 w-full h-full object-cover object-top select-none pointer-events-none blur-[7px] scale-[1.06] transition-opacity duration-700 ease-out ${
                           isOpen ? "opacity-0" : "opacity-100"
                         }`}
