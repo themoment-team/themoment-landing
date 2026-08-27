@@ -7,7 +7,14 @@
    Gutters stay tight and the vertical rhythm runs long, so the page fills its
    width and breathes between sections rather than the other way round. */
 @theme {
-  --spacing-gutter: 48px;
+  /* The page's side margin, and the one spacing value that was a fixed
+     pixel while everything under it scaled. At 48px it is a comfortable
+     margin on a laptop and a quarter of a phone: 375 wide leaves 279px of
+     line between two 48px gutters, which is where Korean body copy starts
+     breaking mid-phrase. It runs from 20 to 48 now, reaching the old value
+     at about 960px wide, so nothing changes on a desktop and a phone gets
+     56px of its screen back. */
+  --spacing-gutter: clamp(20px, 5vw, 48px);
   --spacing-section: clamp(96px, 10vw, 180px);
   /* The hero's join, carried entirely by the section below it: the hero has
      no bottom padding to give, so the first section after it holds the whole
