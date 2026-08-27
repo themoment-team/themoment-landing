@@ -63,6 +63,67 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Everything above the script is a heading, a description and a list of
+         links; everything a visitor actually reads is drawn by React into the
+         empty div above. So a client that does not run JavaScript — a reader
+         who has turned it off, a request that fails halfway, a crawler that
+         does not execute — receives a page whose entire body is one empty
+         div. Google renders JavaScript; Naver and Daum are far less reliable
+         about it, and they are where this team's visitors search.
+
+         This is the page in the plainest terms it can be put: who the team
+         is, what it has built, and where to find it. It is inert the moment
+         React mounts, so it costs a visitor with JavaScript nothing but the
+         bytes. Keep it in step with the sections it stands in for. -->
+    <noscript>
+      <div
+        style="
+          max-width: 720px;
+          margin: 0 auto;
+          padding: 48px 20px;
+          font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+          color: #292b2f;
+          line-height: 1.6;
+        "
+      >
+        <p style="margin: 0; font-weight: 700">광주소프트웨어마이스터고 학생 개발팀</p>
+        <h1 style="margin: 4px 0 24px; font-size: 40px; color: #4a80f8">더모먼트</h1>
+
+        <p>
+          더모먼트팀은 광주소프트웨어마이스터고등학교의 전공 동아리입니다. 약
+          30명의 재학생, 졸업생들이 모여서 활동하고, 주로 학교에 필요한 서비스를
+          개발합니다.
+        </p>
+        <p>작은 불편도 그냥 지나치지 않습니다. 불편을 마주하는 매 순간을 다시 설계합니다.</p>
+
+        <h2 style="margin: 40px 0 12px; font-size: 24px">Our Project</h2>
+        <ul style="margin: 0; padding-left: 20px">
+          <li><strong>DataGSM</strong> — 광주소프트웨어마이스터고등학교 OpenAPI &amp; OAuth 플랫폼</li>
+          <li><strong>HelloGSM</strong> — 광주소프트웨어마이스터고 입학지원시스템</li>
+          <li><strong>ReadyGSM</strong> — 학과체험 및 입학설명회 신청 서비스</li>
+          <li><strong>EveryGSM</strong> — 광주소프트웨어마이스터고등학교의 모든 프로젝트를 한곳에</li>
+        </ul>
+
+        <h2 style="margin: 40px 0 12px; font-size: 24px">Contact</h2>
+        <ul style="margin: 0; padding-left: 20px">
+          <li>
+            <a href="https://www.instagram.com/team.the_moment/" style="color: #4a80f8"
+              >Instagram</a
+            >
+          </li>
+          <li>
+            <a href="https://github.com/themoment-team" style="color: #4a80f8">GitHub</a>
+          </li>
+        </ul>
+
+        <p style="margin-top: 40px; color: #555962; font-size: 14px">
+          이 페이지의 나머지 부분은 자바스크립트로 그려집니다. 브라우저에서
+          자바스크립트를 켜면 전체 내용을 볼 수 있습니다.
+        </p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
