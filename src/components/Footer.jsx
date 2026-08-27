@@ -16,9 +16,14 @@ const SOCIAL_LINKS = [
 const LEGAL_LINKS = [{ label: "Privacy Policy", href: null }];
 
 /* Ink on the blue field — hovering to the brand colour would be invisible
-   here, since the brand colour is the background. */
+   here, since the brand colour is the background.
+
+   The padding is there to be tapped and the negative margin takes it back
+   out of the layout: text at the label size is a 28px target, which is a
+   thumb's width short, and the column's own spacing is what sets the gaps
+   between these — not the size of the things being tapped. */
 const linkClass =
-  "font-bold text-white text-label transition-colors duration-500 ease-out hover:text-[#292b2f]";
+  "font-bold text-white text-label transition-colors duration-500 ease-out hover:text-[#292b2f] py-2 -my-2";
 
 /* The same type, without the promise of going anywhere. */
 const deadClass = "font-bold text-[#cfdcff] text-label";

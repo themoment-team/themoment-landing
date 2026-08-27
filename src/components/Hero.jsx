@@ -89,6 +89,10 @@ export default function Hero() {
           dividing the width four were sharing would have given each a 175px
           box, and even the first bound after that left the row reading as
           three widely spaced words rather than as one control. */}
+      {/* py-3 rather than py-2 on the links: at the phone's 14px the row was
+          37px tall, and a target under 44 is one a thumb misses. The band
+          below grows into whatever is left, so the hero is the same height
+          either way. */}
       <nav className="relative shrink-0 flex justify-center pt-5">
         <ul className="flex items-stretch w-full max-w-[clamp(210px,24vw,330px)]">
           {NAV_LINKS.map((link, i) => (
@@ -103,7 +107,7 @@ export default function Hero() {
             >
               <a
                 href={link.href}
-                className="block w-full text-center px-2 py-2 text-[#292b2f] text-[clamp(14px,1.5vw,20px)] font-light whitespace-nowrap transition-colors duration-500 ease-out hover:text-[#4A80F8]"
+                className="block w-full text-center px-2 py-3 text-[#292b2f] text-[clamp(14px,1.5vw,20px)] font-light whitespace-nowrap transition-colors duration-500 ease-out hover:text-[#4A80F8]"
               >
                 {link.label}
               </a>
