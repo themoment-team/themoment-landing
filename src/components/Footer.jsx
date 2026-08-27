@@ -1,17 +1,27 @@
 import Reveal from "./Reveal";
 import { GROUP, beat } from "../lib/timing";
 
+/* The team's own accounts, as published on its GitHub organisation. This
+   column was two identical Instagram entries pointing at "#", which is a
+   link that scrolls the visitor back to the top of the page and opens a
+   blank tab doing it. */
 const SOCIAL_LINKS = [
-  { label: "Instagram", href: "#" },
-  { label: "Instagram", href: "#" },
+  { label: "Instagram", href: "https://www.instagram.com/team.the_moment/" },
+  { label: "GitHub", href: "https://github.com/themoment-team" },
 ];
 
-const LEGAL_LINKS = [{ label: "Privacy Policy", href: "#" }];
+/* No href, so it is not a link. There is no privacy policy to point at yet,
+   and a label that goes nowhere is worse than a label that admits it is only
+   a label — give it a href when the page exists and it becomes one. */
+const LEGAL_LINKS = [{ label: "Privacy Policy", href: null }];
 
 /* Ink on the blue field — hovering to the brand colour would be invisible
    here, since the brand colour is the background. */
 const linkClass =
   "font-bold text-white text-label transition-colors duration-500 ease-out hover:text-[#292b2f]";
+
+/* The same type, without the promise of going anywhere. */
+const deadClass = "font-bold text-[#cfdcff] text-label";
 
 /* Split into two colour fields rather than one flat band: the identity sits
    in ink, the navigation in the brand blue, and the seam between them runs
@@ -51,12 +61,15 @@ export default function Footer() {
             SOCIAL
           </Reveal>
           <div className="flex flex-col gap-stack">
-            {SOCIAL_LINKS.map((link, i) => (
+            {SOCIAL_LINKS.map((link) => (
               <a
-                key={i}
+                key={link.label}
                 href={link.href}
                 target="_blank"
                 rel="noreferrer noopener"
+                /* These leave the site, and a new tab arriving unannounced
+                   is disorienting for anyone who cannot see it happen. */
+                aria-label={`${link.label} (새 창에서 열립니다)`}
                 className={linkClass}
               >
                 {link.label}
@@ -73,11 +86,17 @@ export default function Footer() {
             LEGAL
           </Reveal>
           <div className="flex flex-col gap-stack">
-            {LEGAL_LINKS.map((link) => (
-              <a key={link.label} href={link.href} className={linkClass}>
-                {link.label}
-              </a>
-            ))}
+            {LEGAL_LINKS.map((link) =>
+              link.href ? (
+                <a key={link.label} href={link.href} className={linkClass}>
+                  {link.label}
+                </a>
+              ) : (
+                <p key={link.label} className={deadClass}>
+                  {link.label}
+                </p>
+              ),
+            )}
           </div>
         </div>
       </Reveal>
