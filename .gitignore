@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Local secrets; .env.example is the one that is committed
+.env
+
 # Figma export scratch files
 tmpfigma-*.png
 

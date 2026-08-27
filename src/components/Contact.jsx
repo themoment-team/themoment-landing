@@ -11,6 +11,25 @@ const FIELDS = [
 
 const EMPTY = { name: "", email: "", message: "" };
 
+/* Where a message actually goes. The form used to say 문의가 접수되었습니다
+   and post nothing anywhere — it cleared its own fields and told the visitor
+   their message had been received, which is the one thing a contact form
+   must not get wrong.
+
+   It takes any endpoint that accepts a JSON POST: a Formspree form, a Vercel
+   function, an Apps Script. Set VITE_CONTACT_ENDPOINT in .env — see
+   .env.example — and rebuild. With nothing set the form says so rather than
+   pretending, which is also how the team finds out it is unwired. */
+const ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT;
+
+/* idle, sending, sent, error — the last three each have a line to say. */
+const MESSAGE = {
+  sending: "보내는 중입니다…",
+  sent: "문의가 접수되었습니다.",
+  error: "전송에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  unwired: "문의 폼은 연결 준비 중입니다.",
+};
+
 export default function Contact() {
   const [values, setValues] = useState(EMPTY);
   const [status, setStatus] = useState("idle");
@@ -20,11 +39,29 @@ export default function Contact() {
     if (status !== "idle") setStatus("idle");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("sent");
-    setValues(EMPTY);
+    if (!ENDPOINT || status === "sending") return;
+
+    setStatus("sending");
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(values),
+      });
+      /* Anything but a 2xx is a failure the visitor has to be told about,
+         including the ones a form service answers with a body. */
+      if (!res.ok) throw new Error(String(res.status));
+      setStatus("sent");
+      setValues(EMPTY);
+    } catch {
+      setStatus("error");
+    }
   };
+
+  const note = ENDPOINT ? MESSAGE[status] : MESSAGE.unwired;
+  const busy = status === "sending";
 
   const inputClass =
     "bg-[#f5f5f5] w-full px-4 py-3 font-bold text-[#292b2f] text-body outline-none " +
@@ -100,18 +137,28 @@ export default function Contact() {
           <Reveal delay={beat(3, GROUP)} className="flex items-center gap-4">
             <button
               type="submit"
-              className="bg-[#292b2f] text-white font-bold text-body px-8 py-4 transition-colors duration-500 ease-out hover:bg-[#4A80F8] focus-visible:bg-[#4A80F8] outline-none"
+              disabled={!ENDPOINT || busy}
+              className="bg-[#292b2f] text-white font-bold text-body px-8 py-4 transition-colors duration-500 ease-out hover:bg-[#4A80F8] focus-visible:bg-[#4A80F8] outline-none disabled:bg-[#9aa0ab] disabled:cursor-not-allowed disabled:hover:bg-[#9aa0ab]"
             >
-              Send
+              {busy ? "Sending" : "Send"}
             </button>
+            {/* One line for every outcome, held in the live region the whole
+                time rather than mounted when there is news — a region that
+                arrives with its text already in it is a region screen readers
+                may not announce. Failures are set in ink rather than in the
+                brand blue, so success and failure do not read alike at a
+                glance; the words carry it either way, for anyone who cannot
+                tell the two colours apart. */}
             <p
               role="status"
               aria-live="polite"
-              className={`font-semibold text-caption text-[#4A80F8] transition-opacity duration-500 ease-out ${
-                status === "sent" ? "opacity-100" : "opacity-0"
-              }`}
+              className={`font-semibold text-caption transition-opacity duration-500 ease-out ${
+                status === "error" || !ENDPOINT
+                  ? "text-[#292b2f]"
+                  : "text-[#4A80F8]"
+              } ${note ? "opacity-100" : "opacity-0"}`}
             >
-              문의가 접수되었습니다.
+              {note}
             </p>
           </Reveal>
         </form>
