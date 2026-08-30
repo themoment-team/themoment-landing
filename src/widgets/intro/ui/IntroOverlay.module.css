@@ -1,0 +1,215 @@
+/* ============================================================
+   The landing intro.
+
+   The resting state is the state the intro ENDS in — veil transparent,
+   logo docked at the top, mark fully drawn. The animation is layered on top
+   of that, and only under `.run` with motion allowed. So a JavaScript error,
+   a stylesheet that never arrives, or a reduced-motion setting all leave a
+   perfectly normal page. Written the other way round — resting state
+   "covered" — any one of those failures would leave the landing a black
+   rectangle for good.
+
+   `.run` ships in the server markup, so the animation starts on the first
+   paint rather than after hydration. Adding it from an effect shows the
+   finished logo for a frame and then restarts it, which is very visible
+   under SSR.
+
+   Adapted from the handoff in three places, all noted below: the ground
+   colour, the font variable, and the theme switching.
+   ============================================================ */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  /* The overlay never blocks a click, even while the veil is up. Blocking
+     would mean depending on a state transition to unblock, and if that
+     transition ever failed the page would be locked for good — a far worse
+     failure than a stray click landing during the opening. */
+  pointer-events: none;
+
+  /* ---- tuning ---- */
+  --dock-y: 64px;      /* the docked logo's CENTRE, from the top of the screen */
+  --dock-scale: 0.42;  /* how far it shrinks on the way up */
+
+  /* ---- colour ----
+     The site has one theme, so the handoff's light set and its
+     prefers-color-scheme / [data-theme] switches are gone: they would only
+     have been dead branches.
+
+     --ground is #000000 and not the page's own --color-ink. The veil has to
+     match what is actually behind it, and behind it is the hero, which is
+     the particle canvas — an opaque black canvas, painting exactly
+     #000000. Set to the ink instead, the last frame of the fade would show
+     a five-value seam across the whole screen. The flat fill is deliberate
+     too: the handoff's radial lift was there to give a light ground some
+     shape, and over the star field it would read as a smudge. */
+  --ground: #000000;
+  --ink: #ffffff;
+
+  /* Defined here rather than left to the project. next/font would expose a
+     variable of this name; this site loads Pretendard from a CDN instead,
+     so nothing defines it — and an undefined var() invalidates the whole
+     font-family declaration it sits in, dropping the wordmark to a serif. */
+  --font-pretendard: "Pretendard Variable";
+
+  --mark-shadow: drop-shadow(0 20px 44px rgba(0, 0, 0, 0.65))
+    drop-shadow(0 0 38px rgba(74, 128, 248, 0.3));
+}
+
+@media (max-width: 560px) {
+  .intro {
+    --dock-y: 52px;
+    --dock-scale: 0.5;
+  }
+}
+
+/* Marks the overlay as one that should play. Carried in the server markup. */
+.run {
+  --intro-run: 1;
+}
+
+/* The cover over the hero. Transparent at rest — that is, once the intro
+   has finished. */
+.veil {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-color: var(--ground);
+}
+
+/* Mark and wordmark together. At rest, already docked. */
+.lockup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(0px, 0.5vw, 6px);
+  color: var(--ink);
+  transform-origin: 50% 50%;
+  transform: translateY(var(--dock-dy, calc(-50vh + var(--dock-y)))) scale(var(--dock-scale));
+  opacity: var(--fade, 1);
+  will-change: transform, opacity;
+}
+
+.mark {
+  width: clamp(116px, 17vw, 158px);
+  height: auto;
+  display: block;
+  filter: var(--mark-shadow);
+}
+
+.word {
+  margin: 0;
+  font-family: var(--font-pretendard), "Pretendard", -apple-system, "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+  font-size: clamp(26px, 4.8vw, 41px);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1;
+  display: flex;
+}
+
+.word span {
+  display: inline-block;
+}
+
+/* ---- the logo's own resting state: finished ---- */
+.wipe {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.mLine {
+  opacity: 0;
+}
+.mFill {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.head {
+  opacity: 0;
+  offset-path: path("M65.809 88.942 A30.69 30.69 0 0 1 116.309 73.792 A30.69 30.69 0 0 1 105.618 125.419");
+  offset-rotate: 0deg;
+  filter: drop-shadow(0 0 3px rgba(36, 56, 248, 0.75));
+}
+
+@keyframes tmDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes tmCard {
+  from { opacity: 0; transform: scale(0.945); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tmLand {
+  from { opacity: 0; transform: scale(0.84); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tmOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes tmRise {
+  from { opacity: 0; transform: translateY(0.34em); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tmRide {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+@keyframes tmHead {
+  0% { opacity: 0; }
+  9% { opacity: 1; }
+  86% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes tmVeilOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes tmDock {
+  from { transform: none; }
+  to { transform: translateY(var(--dock-dy, calc(-50vh + var(--dock-y)))) scale(var(--dock-scale)); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* drawing the mark */
+  .run .mark { animation: tmCard 0.62s cubic-bezier(0.2, 0.82, 0.26, 1) 0.05s both; }
+  .run .wMain { animation: tmDraw 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both; }
+  .run .wRing { animation: tmDraw 1.15s cubic-bezier(0.58, 0.04, 0.3, 1) 0.62s both; }
+  .run .wTick { animation: tmDraw 0.5s cubic-bezier(0.5, 0.05, 0.35, 1) 1.05s both; }
+  .run .mLine {
+    animation: tmDraw 0.58s cubic-bezier(0.5, 0.06, 0.35, 1) 1.28s both,
+      tmOut 0.34s ease 1.8s both;
+  }
+  .run .mFill { animation: tmLand 0.52s cubic-bezier(0.22, 1.32, 0.36, 1) 1.68s both; }
+
+  /* the wordmark, a letter at a time. Change the string in the component
+     and these nth-child delays have to change with it. */
+  .run .word span { animation: tmRise 0.72s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .run .word span:nth-child(1) { animation-delay: 1.62s; }
+  .run .word span:nth-child(2) { animation-delay: 1.658s; }
+  .run .word span:nth-child(3) { animation-delay: 1.696s; }
+  .run .word span:nth-child(4) { animation-delay: 1.734s; }
+  .run .word span:nth-child(5) { animation-delay: 1.772s; }
+  .run .word span:nth-child(6) { animation-delay: 1.81s; }
+  .run .word span:nth-child(7) { animation-delay: 1.848s; }
+  .run .word span:nth-child(8) { animation-delay: 1.886s; }
+  .run .word span:nth-child(9) { animation-delay: 1.924s; }
+  .run .word span:nth-child(10) { animation-delay: 1.962s; }
+
+  /* the spark riding the head of the arc — simply absent where offset-path
+     is not supported, rather than parked at the origin */
+  @supports (offset-path: path("M0 0 L1 1")) {
+    .run .head {
+      animation: tmRide 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both,
+        tmHead 1.14s linear 0.4s both;
+    }
+  }
+
+  /* docking — once the drawing is done, up to the top centre. The 2.75s
+     here is DOCK_AT in the component; they have to stay equal. */
+  .run .lockup { animation: tmDock 0.95s cubic-bezier(0.62, 0.02, 0.2, 1) 2.75s both; }
+  .run .veil { animation: tmVeilOut 0.8s ease 2.8s both; }
+}

@@ -4,24 +4,27 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "typecheck": "tsc --noEmit",
+    "members:inspect": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/inspect-members.ts"
   },
   "dependencies": {
+    "next": "^16.3.3",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.4",
-    "autoprefixer": "^10.5.4",
     "oxlint": "^1.75.0",
     "postcss": "^8.5.25",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.0"
+    "typescript": "^7.0.2"
   }
 }

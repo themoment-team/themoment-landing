@@ -1,24 +1,31 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 
-/* Fires once, the first time the element crosses the trigger line, and then
+interface Options {
+  threshold?: number;
+  rootMargin?: string;
+  /* For elements inside a RevealGroup, which take their cue from the group.
+     There is no point attaching an observer per element when one is already
+     watching for all of them. */
+  enabled?: boolean;
+}
+
+/* Fires once, the first time the element crosses the trigger line, then
    stops observing. Everything on the page is an opening rather than an
    entrance: replaying a section on the way back up reads as the site
    restarting.
 
-   threshold stays at 0 on purpose: an element taller than the viewport can
-   never reach a fractional threshold, so the reveal would never fire. The
-   negative bottom margin is what holds the reveal back until the element has
-   actually risen into the page.
-
-   `enabled` is for elements inside a RevealGroup, which take their cue from
-   the group instead — there is no point attaching an observer per element
-   when one is already watching for all of them. */
-export default function useInView({
+   threshold stays at 0 on purpose — an element taller than the viewport can
+   never reach a fractional threshold, so the reveal would never fire at
+   all. The negative bottom margin is what holds it back until the element
+   has actually risen into the page. */
+export function useInView<T extends HTMLElement = HTMLElement>({
   threshold = 0,
   rootMargin = "0px 0px -12% 0px",
   enabled = true,
-} = {}) {
-  const ref = useRef(null);
+}: Options = {}): [React.RefObject<T | null>, boolean] {
+  const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
 
   useEffect(() => {
@@ -26,6 +33,8 @@ export default function useInView({
     const node = ref.current;
     if (!node) return;
 
+    /* Server-rendered markup reaches the browser hidden. If the observer is
+       unavailable, everything shows rather than nothing. */
     if (typeof IntersectionObserver === "undefined") {
       setInView(true);
       return;
@@ -46,3 +55,5 @@ export default function useInView({
 
   return [ref, inView];
 }
+
+export default useInView;
