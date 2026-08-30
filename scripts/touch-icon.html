@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- The home-screen icon, drawn from public/favicon.svg so there is one mark
+     and not two. iOS rounds the corners itself and composites onto black
+     wherever the source is transparent, so this fills the square with paper
+     and drops the favicon's own rounded plate and drop shadow.
+
+     To redraw public/apple-touch-icon.png, with the dev server running:
+
+       chrome --headless=new --hide-scrollbars --force-device-scale-factor=1 \
+         --window-size=180,180 --virtual-time-budget=4000 \
+         --screenshot=public/apple-touch-icon.png \
+         http://localhost:5173/scripts/touch-icon.html
+
+     180x180 is the size iOS asks for and scales down from. -->
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>touch icon</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #ffffff; }
+      body { width: 180px; height: 180px; display: grid; place-items: center; }
+      /* The mark sits on a 192 square inset by 28, so it is 71% of its own
+         file. Scaling to 76% of the icon leaves it the breathing room a home
+         screen wants without the plate the favicon carries. */
+      #mark { width: 152px; height: 152px; display: block; }
+      #mark rect { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="mark"></div>
+    <script type="module">
+      const svg = await fetch("/favicon.svg").then((r) => r.text());
+      document.getElementById("mark").innerHTML = svg;
+      const el = document.querySelector("#mark svg");
+      el.setAttribute("width", "152");
+      el.setAttribute("height", "152");
+      /* The white plate and its shadow are the favicon's, not the icon's. */
+      el.querySelectorAll('rect[fill="white"]').forEach((r) => r.remove());
+      el.querySelectorAll("filter").forEach((f) => f.remove());
+      el.querySelectorAll("g[filter]").forEach((g) => g.removeAttribute("filter"));
+      /* Crop to the ink itself rather than to a guessed inset: the mark's
+         outer ring fades to nothing, so a viewBox taken from the file's own
+         square leaves the icon looking small and washed. getBBox is the
+         actual painted extent. */
+      const b = el.querySelector("path").getBBox();
+      const pad = b.width * 0.06;
+      el.setAttribute(
+        "viewBox",
+        `${b.x - pad} ${b.y - pad} ${b.width + pad * 2} ${b.height + pad * 2}`,
+      );
+    </script>
+  </body>
+</html>
