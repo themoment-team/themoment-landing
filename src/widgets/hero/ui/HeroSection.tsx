@@ -1,3 +1,4 @@
+import { SITE_HEADING } from "@/shared/config/site";
 import ScrollCue from "./ScrollCue";
 
 /* The four the design puts in the corner. Values is deliberately not among
@@ -27,6 +28,19 @@ const NAV = [
 export default function HeroSection() {
   return (
     <section className="relative flex min-h-dvh w-full flex-col overflow-hidden">
+      {/* The page had no h1 at all — the first heading on it was About's,
+          and the name of the thing the page is about was nowhere in its
+          text. It could not be: the wordmark is drawn on a canvas out of
+          sixteen thousand particles, which is a picture as far as anything
+          that is not looking at it is concerned, and there is no alt text on
+          a canvas.
+
+          So the heading is stated here and hidden. Hidden, not styled small:
+          the design has no title on this screen and should not grow one.
+          sr-only leaves it in the accessibility tree and in the markup,
+          which is where both audiences that need it are reading. */}
+      <h1 className="sr-only">{SITE_HEADING}</h1>
+
       {/* No background and no logo of its own.
 
           The hero used to draw the mark centred at the top, which is exactly

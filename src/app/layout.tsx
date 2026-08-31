@@ -1,35 +1,40 @@
 import type { Metadata, Viewport } from "next";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_ORIGIN,
+  SITE_SOCIALS,
+  SITE_URL,
+} from "@/shared/config/site";
 import "./globals.css";
 
-/* The team's own name, set the way the site sets it. Worth knowing what it
-   costs: a search result for this page now shows "the_moment" and nothing
-   else, so the words someone would actually search for — 광주소프트웨어마이스터고,
-   전공동아리 — are carried entirely by the description below. */
-const TITLE = "the_moment";
+const TITLE = SITE_NAME;
+const DESCRIPTION = SITE_DESCRIPTION;
 
-/* The same two lines the About section opens with, which is the shortest
-   honest answer to what this page is. Google shows around 150 characters of
-   it; the first sentence says who, so a truncation still lands somewhere
-   sensible. */
-const DESCRIPTION =
-  "더모먼트는 광주소프트웨어마이스터고의 전공동아리입니다. 항상 새로운 비즈니스 모델에 대해 고민하고, 기술을 통해 사용자의 경험을 향상시키려 노력합니다.";
+/* What a search engine is told the page is, in the vocabulary it parses
+   rather than the one it guesses at. The page's own name is a wordmark
+   drawn out of particles on a canvas, which is not text to anything that
+   is not looking at it — so the name, the description and the one account
+   the team actually posts from are stated here as well.
 
-/* Open Graph images have to be absolute URLs — Slack and Discord will
-   resolve a relative one, Facebook and X will not. Next builds them off
-   metadataBase, and when that is unset it falls back to localhost with a
-   warning: a card pointing at localhost/og.png, which nothing can fetch.
-
-   Vercel sets VERCEL_PROJECT_PRODUCTION_URL on every deployment — the
-   project's stable production host, not the per-deployment one — so the
-   absolute URL comes out right with nothing to configure. Set
-   NEXT_PUBLIC_SITE_URL to override it once there is a custom domain; it
-   wins, because the deployment variable will still be the vercel.app host
-   after the domain is attached. */
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : undefined);
+   Kept next to the metadata rather than in the section it describes,
+   because it describes the site, not any one part of it. */
+const ORGANIZATION = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  alternateName: ["더모먼트", "THE MOMENT"],
+  description: SITE_DESCRIPTION,
+  url: SITE_ORIGIN,
+  logo: `${SITE_ORIGIN}/favicon.svg`,
+  image: `${SITE_ORIGIN}/og.png`,
+  email: "yuchan.7im@gmail.com",
+  sameAs: SITE_SOCIALS,
+  parentOrganization: {
+    "@type": "EducationalOrganization",
+    name: "광주소프트웨어마이스터고등학교",
+  },
+};
 
 export const metadata: Metadata = {
   ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
@@ -49,9 +54,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    siteName: "the_moment",
+    siteName: SITE_NAME,
     title: TITLE,
     description: DESCRIPTION,
+    /* KakaoTalk is where this link will actually be pasted, and it reads
+       og:url — without one it has no address to attach the card to and
+       falls back to whatever the crawler was handed. Every other platform
+       treats it as the card's canonical target. */
+    ...(SITE_URL ? { url: "/" } : {}),
     /* The hero itself — the mark gathered out of its field of particles —
        rather than a card drawn for the purpose. 1200x675 rather than the
        usual 1200x630: it is the 16:9 the screen is, and every platform that
@@ -91,7 +101,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          /* The one place a raw string has to be written into the document.
+             It is a constant defined a few lines up with no input from
+             anywhere — no request, no CMS, nothing a visitor can reach — so
+             there is nothing here to inject. JSON.stringify escapes the
+             quotes; the closing tag is what would break out of a script
+             block, and none of these strings contains one. */
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
