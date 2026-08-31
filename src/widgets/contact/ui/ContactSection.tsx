@@ -5,7 +5,8 @@ import { useFormStatus } from "react-dom";
 import Reveal from "@/shared/ui/Reveal";
 import RevealGroup from "@/shared/ui/RevealGroup";
 import { BEAT, GROUP, beat } from "@/shared/lib/timing";
-import { INITIAL_CONTACT_STATE, sendContact } from "../api/sendContact";
+import { sendContact } from "../api/sendContact";
+import { INITIAL_CONTACT_STATE } from "../model/state";
 
 /* The three fields the comp draws, with the line above each one that says
    what it is for. autoComplete is what lets a browser fill the first two

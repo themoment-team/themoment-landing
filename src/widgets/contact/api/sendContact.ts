@@ -2,6 +2,8 @@
 
 import { headers } from "next/headers";
 
+import type { ContactState } from "../model/state";
+
 /* Where a message actually goes: Web3Forms, which mails it to
    yuchan.7im@gmail.com.
 
@@ -61,13 +63,6 @@ function tooMany(ip: string): boolean {
   }
   return hits.length > RATE_MAX;
 }
-
-export type ContactState = {
-  status: "idle" | "sent" | "error" | "unwired" | "invalid" | "throttled";
-  message: string;
-};
-
-export const INITIAL_CONTACT_STATE: ContactState = { status: "idle", message: "" };
 
 const MESSAGE = {
   sent: "문의가 접수되었습니다. 확인 후 답변드리겠습니다.",
