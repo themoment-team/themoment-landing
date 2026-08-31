@@ -101,6 +101,13 @@
      mid-phrase; 20px leaves 335. */
   --spacing-gutter: clamp(20px, 5.6vw, 80px);
   --spacing-section: clamp(88px, 11vw, 160px);
+  /* Member, Work and Contact are read at length and are given more room
+     above and below than the comp allows. Its own step rather than a bigger
+     --spacing-section, because that one is also the inset of the values
+     frame, where the padding is geometry — the sentence sits against the top
+     of a pinned screen and the list against the bottom, and widening it
+     squeezes the two together instead of opening anything up. */
+  --spacing-roomy: clamp(120px, 15vw, 220px);
   --spacing-block: clamp(44px, 5.6vw, 80px);
   --spacing-stack: clamp(20px, 2.8vw, 40px);
 

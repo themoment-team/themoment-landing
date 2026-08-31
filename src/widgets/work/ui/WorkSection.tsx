@@ -40,7 +40,7 @@ const WORK = [
 export default function WorkSection() {
   return (
     <section id="work" className="relative flex min-h-dvh w-full flex-col bg-white">
-      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-section">
+      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-roomy">
         <Reveal as="h2" className="text-display font-bold text-graphite">
           Work
         </Reveal>

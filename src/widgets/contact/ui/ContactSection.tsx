@@ -118,7 +118,7 @@ export default function ContactSection() {
 
   return (
     <section id="contact" className="relative flex min-h-dvh w-full flex-col bg-veil">
-      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-block">
+      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-roomy">
         <Reveal as="h2" className="text-display font-bold text-white">
           Contact
         </Reveal>

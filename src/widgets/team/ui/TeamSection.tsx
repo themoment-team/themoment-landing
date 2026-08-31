@@ -16,7 +16,12 @@ export default async function TeamSection() {
 
   return (
     <section id="member" className="relative flex min-h-dvh w-full flex-col bg-veil">
-      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-section">
+      {/* Deeper below than above. The roster ends on a row of chips with
+          nothing under it to close the section off, so the same padding top
+          and bottom reads as the page running out rather than the section
+          ending. Built from the two steps rather than typed as a number, so
+          it still tracks the scale on a narrow screen. */}
+      <RevealGroup className="mx-auto flex w-full grow flex-col items-center justify-center px-gutter pt-roomy pb-[calc(var(--spacing-roomy)_+_var(--spacing-block))]">
         <Reveal as="h2" className="text-display font-bold text-white">
           Member
         </Reveal>
