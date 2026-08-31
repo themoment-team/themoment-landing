@@ -6,8 +6,8 @@ import { BEAT } from "@/shared/lib/timing";
    page and the only one that is nothing but prose. */
 export default function AboutSection() {
   return (
-    <section id="about" className="relative flex min-h-dvh w-full flex-col bg-veil scroll-mt-16">
-      <RevealGroup className="mx-auto flex w-full max-w-column grow flex-col justify-center items-center px-gutter py-block text-center">
+    <section id="about" className="relative flex min-h-dvh w-full flex-col bg-veil">
+      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-block text-center">
         <Reveal as="h2" className="text-display font-bold text-white">
           About
         </Reveal>

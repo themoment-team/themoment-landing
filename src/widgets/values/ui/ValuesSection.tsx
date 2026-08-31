@@ -1,106 +1,154 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Reveal from "@/shared/ui/Reveal";
 import RevealGroup from "@/shared/ui/RevealGroup";
 import { GROUP, beat } from "@/shared/lib/timing";
 
-/* The comp draws this list with the first row lit and the other two dimmed,
-   which is a state rather than a style — three rows permanently greyed out
-   would read as two of the team's three values being switched off. So the
-   lit row follows the pointer, and starts where the comp has it. */
+/* Each value carries the sentence that belongs to it. The comp shows one
+   sentence and one lit row, which is a single frame of something that moves:
+   the reader scrolls, the lit row advances, and the sentence at the top
+   changes with it. */
 const VALUES = [
   {
     num: "01.",
     name: "Professional",
-    note: "각자의 분야에서 최고가 되기 위해 끊임없이 학습하고 역량을 키웁니다.",
+    line: "각자의 분야에서 끊임없이 배우고 성장하며, 역량을 키웁니다.",
   },
   {
     num: "02.",
     name: "Communication",
-    note: "열린 태도와 신뢰를 바탕으로, 서로를 존중하며 함께 나아갑니다.",
+    line: "열린 태도와 신뢰를 바탕으로, 서로를 존중하며 함께 나아갑니다.",
   },
   {
     num: "03.",
     name: "Passion",
-    note: "창의적인 사고로 변화에 앞장서고, 실패를 두려워하지 않습니다.",
+    line: "창의적인 사고와 혁신에 앞장서고, 변화와 이견을 두려워하지 않습니다.",
   },
 ];
 
 export default function ValuesSection() {
+  const ref = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
 
+  /* Which value is showing is a function of how far into the section the page
+     has scrolled — not of the pointer, which is what used to drive it. The
+     section is several screens tall and its content is stuck to the top of
+     the screen for all of them, so the scroll happens against a still picture
+     and only the value changes. */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      /* How far the pinned child has to travel: the section's height less
+         the one screen it is pinned to. */
+      const range = el.offsetHeight - window.innerHeight;
+      if (range <= 0) return;
+      const progress = Math.min(1, Math.max(0, -el.getBoundingClientRect().top / range));
+      /* One equal band of the travel each — a third of it apiece, so no
+         value is read for longer than another.
+
+         Rounding to the nearest of three points instead, which is what this
+         did, only gives the middle value a full band: the first and last sit
+         either side of it with half a band each, and Passion went by in half
+         the scrolling Communication got. */
+      setActive(Math.min(VALUES.length - 1, Math.floor(progress * VALUES.length)));
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
-    <section id="values" className="relative flex min-h-dvh w-full flex-col bg-veil scroll-mt-16">
-      {/* The one section that does not centre its content. The comp pins the
-          sentence to the top of an 810-tall frame and hangs the list off the
-          bottom, which only became reproducible once the section was a whole
-          screen — before that it was a guessed gap in the middle. */}
-      <RevealGroup className="mx-auto flex w-full max-w-column grow flex-col justify-between px-gutter py-section">
+    <section
+      ref={ref}
+      id="values"
+      className="relative w-full bg-white"
+      /* One screen of scrolling per value, written from the list rather than
+         as a class so adding a fourth value cannot silently leave it without
+         room to appear in. Tailwind compiles class names ahead of time and
+         could not have done this. */
+      style={{ minHeight: `${VALUES.length * 100}dvh` }}
+    >
+      {/* Pinned for the whole of that scroll. The comp pins the sentence to
+          the top of the frame and hangs the list off the bottom, which is
+          what justify-between reproduces once the child is exactly a screen
+          tall. */}
+      <RevealGroup className="sticky top-0 mx-auto flex h-dvh w-full flex-col justify-between px-gutter py-section">
         {/* One sentence split across the width, the way the comp sets it —
             the subject on the left, the rest hard against the right margin.
-            It stays one paragraph, so a screen reader hears one sentence
-            rather than two fragments. */}
+            The left half never changes; the right half is whichever value is
+            being read. */}
         <Reveal
-          as="p"
-          className="flex flex-col justify-between gap-2 text-statement font-bold text-white lg:flex-row lg:gap-stack"
+          as="div"
+          className="flex flex-col justify-between gap-2 text-statement font-bold text-graphite lg:flex-row lg:gap-stack"
         >
           <span className="shrink-0">
             저희는 <span className="text-accent">좋은 서비스</span>를 위해
           </span>
-          <span className="lg:text-right">
-            각자의 분야에서 최고가 되기 위해 끊임없이 학습하고 역량을 키웁니다.
+
+          {/* All three sentences share one grid cell, so the box is as tall as
+              the longest of them and nothing moves as they change. Swapping
+              the text of a single node instead would cut straight from one
+              sentence to the next with no crossfade, and would reflow the row
+              whenever two of them wrapped to different heights. */}
+          <span className="grid lg:justify-items-end lg:text-right">
+            {VALUES.map((value, i) => (
+              <span
+                key={value.num}
+                aria-hidden={i !== active}
+                className={`col-start-1 row-start-1 transition-opacity duration-500 ease-out ${
+                  i === active ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {value.line}
+              </span>
+            ))}
           </span>
         </Reveal>
 
-        {/* The gap above this is whatever the screen leaves, which is what
-            justify-between on the group is for. It used to be a fixed
-            max(4rem, 16vh) standing in for the height of a frame the section
-            did not have. The floor is only there so the two blocks do not
-            touch on a short screen. */}
-        <ul className="mt-block flex flex-col gap-stack">
+        <ul className="flex flex-col gap-stack">
           {VALUES.map((value, i) => {
             const isActive = active === i;
             return (
               <Reveal as="li" key={value.num} delay={beat(i, GROUP)} className="w-full">
-                {/* Pointer and keyboard both light a row. A group rather
-                    than a button: nothing happens when you press it, it only
-                    says which value is being read. */}
-                <div
-                  onMouseEnter={() => setActive(i)}
-                  onFocus={() => setActive(i)}
-                  tabIndex={0}
-                  className="flex flex-col gap-1 outline-none sm:flex-row sm:items-baseline sm:gap-12"
-                >
+                {/* Nothing to press. The list reports which value is being
+                    read; it is not a control. It used to be focusable and
+                    pointer-driven, which fought the scroll for the same piece
+                    of state. */}
+                <div className="flex items-baseline gap-6 sm:gap-12">
                   <span
                     className={`w-[38px] shrink-0 text-numeral font-medium transition-colors duration-500 ease-out ${
-                      isActive ? "text-accent" : "text-accent-dim"
+                      /* On white the dimmed blue reads darker than the type
+                         it is meant to sit behind, so the off state is the
+                         same grey the name takes. */
+                      isActive ? "text-accent" : "text-muted"
                     }`}
                   >
                     {value.num}
                   </span>
-                  <div className="min-w-0">
-                    <p
-                      className={`text-headline font-semibold transition-colors duration-500 ease-out ${
-                        isActive ? "text-white" : "text-muted"
-                      }`}
-                    >
-                      {value.name}
-                    </p>
-                    {/* What the value actually means. The comp has room for
-                        three names and nothing else, and a reader who does
-                        not already know the team learns nothing from the
-                        word Passion on its own. It is set only while the row
-                        is the one being read, so the list still reads as
-                        three words at rest. */}
-                    <p
-                      className={`overflow-hidden text-body font-medium text-muted transition-all duration-500 ease-out ${
-                        isActive ? "mt-2 max-h-24 opacity-100" : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      {value.note}
-                    </p>
-                  </div>
+                  <p
+                    className={`text-headline font-semibold transition-colors duration-500 ease-out ${
+                      isActive ? "text-graphite" : "text-muted"
+                    }`}
+                  >
+                    {value.name}
+                  </p>
                 </div>
               </Reveal>
             );

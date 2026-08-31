@@ -7,6 +7,7 @@ import ValuesSection from "@/widgets/values/ui/ValuesSection";
 import TeamSection from "@/widgets/team/ui/TeamSection";
 import WorkSection from "@/widgets/work/ui/WorkSection";
 import ContactSection from "@/widgets/contact/ui/ContactSection";
+import Footer from "@/widgets/footer/ui/Footer";
 
 /* The page, in the order the design file lays it out. Everything here is a
    server component except the two that need state — the values list and the
@@ -19,8 +20,8 @@ import ContactSection from "@/widgets/contact/ui/ContactSection";
    not a height: Work is four stills stacked and is meant to run long, and
    the team grid grows with the roster.
 
-   No footer: the design does not have one, and the replacement is coming
-   from elsewhere.
+   The footer is the one part not in the Figma file — it comes from a
+   separate reference the team supplied.
 
    The intro belongs to this page rather than the layout — the opening is
    for arriving at the landing, and any other route the site grows would
@@ -45,6 +46,8 @@ export default function LandingPage() {
         <WorkSection />
         <ContactSection />
       </main>
+      {/* Outside <main>: it is the page furniture, not the page. */}
+      <Footer />
     </>
   );
 }

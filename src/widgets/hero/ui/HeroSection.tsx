@@ -1,5 +1,6 @@
 import Reveal from "@/shared/ui/Reveal";
 import { BEAT, beat } from "@/shared/lib/timing";
+import ScrollCue from "./ScrollCue";
 
 /* The four the design puts in the corner. Values is deliberately not among
    them — the comp lists About, Member, Work, Contact and nothing else, and
@@ -71,28 +72,16 @@ export default function HeroSection() {
           between the header and the cue and draws nothing. */}
       <div className="grow" />
 
+      {/* rootMargin 0 rather than the reveal default. The default holds an
+          element back until it is 12% clear of the bottom of the screen, and
+          the cue sits inside that 12% from the first paint — so it never
+          crossed the line, never fired, and simply never appeared. */}
       <Reveal
         delay={beat(NAV.length) + BEAT}
+        rootMargin="0px"
         className="relative z-10 flex flex-col items-center pb-10"
       >
-        {/* An anchor rather than a caption: it says there is more below, and
-            it is the one thing on this screen a keyboard would want. */}
-        <a
-          href="#about"
-          className="flex flex-col items-center gap-[5px] px-4 py-2 text-label font-medium text-white transition-colors duration-500 ease-out hover:text-accent focus-visible:text-accent focus-visible:outline-none"
-        >
-          Scroll Down
-          <svg
-            aria-hidden
-            width="11"
-            height="7"
-            viewBox="0 0 10.7071 6.06066"
-            fill="none"
-            className="scroll-cue"
-          >
-            <path d="M0.353553 0.353553L5.35355 5.35355L10.3536 0.353553" stroke="currentColor" />
-          </svg>
-        </a>
+        <ScrollCue />
       </Reveal>
     </section>
   );

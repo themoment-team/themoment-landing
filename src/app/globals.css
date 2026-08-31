@@ -26,6 +26,17 @@
   --color-ink: #050506;
   --color-veil: rgba(0, 0, 0, 0.6);
 
+  /* The footer, and the only band on the page that is not the starfield.
+     Lifted well clear of the ink so it reads as the end of the document
+     rather than one more veiled section, and opaque so the particle canvas
+     fixed behind everything does not keep drifting through it. */
+  --color-surface: #2a2c31;
+
+  /* Type on the two sections that are laid on white. Not black: the same
+     graphite the team used before this design, which keeps a page of Korean
+     from ringing. */
+  --color-graphite: #292b2f;
+
   --color-accent: #4a80f8;
   /* The same blue with the light taken out of it, for a numeral whose row
      is not the one being read. It has to read as the blue's own off state
@@ -84,9 +95,11 @@
   --spacing-block: clamp(44px, 5.6vw, 80px);
   --spacing-stack: clamp(20px, 2.8vw, 40px);
 
-  /* The content column. Everything on the page is bounded by it and centred
-     in it, so a wide monitor gets margin rather than a 2560px line. */
-  --spacing-column: 1280px;
+  /* No content cap. The comp is one 1440 frame with 80px gutters, and the
+     ask was to carry that to a full screen rather than to letterbox it —
+     so the gutter is the whole of the margin and everything between them is
+     content. At 1440 that is the comp exactly: 1440 less two 80s is 1280.
+     Wider than that and the content grows with the screen. */
 }
 
 :root {
@@ -94,25 +107,18 @@
     system-ui, sans-serif;
   scroll-behavior: smooth;
 
-  /* One section to a screen. Every section is at least a viewport tall and
-     aligns its top to the top of the screen, so a wheel gesture that ends
-     near a boundary carries on to the next section instead of leaving the
-     view straddling two of them.
+  /* The page scrolls natively. Nothing here snaps it and nothing drives it
+     from JavaScript.
 
-     `mandatory` rather than `proximity` because proximity only snaps when
-     the scroll happens to stop close to a boundary, which is the halfway
-     rest this is meant to remove.
+     Both were tried. CSS scroll-snap with `scroll-snap-stop: always` ate
+     wheel input: the stop rule forbids a gesture from passing a snap point,
+     and deltas arriving during the browser's own snap animation are
+     discarded rather than queued. Replacing it with a scripted glide fixed
+     that and brought its own weight — a scroll the page owned rather than
+     the reader.
 
-     A section taller than the screen — Work is three and a half of them —
-     is not trapped by this. Where a snap area is larger than the viewport,
-     any position that keeps the area covering the viewport is a valid one,
-     so scrolling through Work is free and the snap only takes hold again at
-     Contact's edge.
-
-     It pairs with scroll-behavior above: the snap is animated, not a jump.
-     Under reduced motion that rule becomes `auto` and the snap lands
-     instantly, which is the right form of the same behaviour. */
-  scroll-snap-type: y mandatory;
+     scroll-behavior above is all that is left of it, and it only applies to
+     the nav's anchor links. */
   /* Native form controls, scrollbars and focus rings all read this. Without
      it a text cursor and a select menu arrive in light mode on a black
      page. */
@@ -187,6 +193,35 @@ section {
 @media (prefers-reduced-motion: reduce) {
   :root {
     scroll-behavior: auto;
+  }
+}
+
+/* ---------- swapping parts ----------
+   The chips are remounted when the tab changes, so this plays on arrival.
+   Staggered by a hand from the component, and capped there so a part with
+   fifteen people does not take half a second longer to finish than one with
+   two. There is no matching exit: the outgoing set is gone before this
+   starts, which is what a crossfade of two absolutely-positioned grids would
+   cost several times over in complexity. */
+
+@keyframes memberIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.member-in {
+  animation: memberIn 420ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-in {
+    animation: none;
   }
 }
 

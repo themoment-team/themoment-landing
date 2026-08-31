@@ -12,6 +12,13 @@ interface RevealProps {
   variant?: "reveal" | "reveal-up" | "reveal-scale";
   delay?: number;
   threshold?: number;
+  /* The default holds a reveal back until the element has risen 12% clear of
+     the bottom of the screen, which is right for everything the reader
+     scrolls down to. It is wrong for anything that is already sitting in
+     that bottom 12% on the first paint — the hero's scroll cue was never
+     revealed at all, because it never crossed a line it started below.
+     Those pass "0px". */
+  rootMargin?: string;
   className?: string;
   children?: ReactNode;
   [key: string]: unknown;
@@ -22,6 +29,7 @@ export default function Reveal({
   variant = "reveal",
   delay = 0,
   threshold,
+  rootMargin,
   className = "",
   children,
   ...rest
@@ -32,6 +40,7 @@ export default function Reveal({
   const [ref, own] = useInView({
     enabled: group === null,
     ...(threshold === undefined ? {} : { threshold }),
+    ...(rootMargin === undefined ? {} : { rootMargin }),
   });
   const inView = group === null ? own : group;
 

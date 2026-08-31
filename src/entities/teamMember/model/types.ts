@@ -25,14 +25,3 @@ export interface TeamMember {
   link: string;
   order: number | null;
 }
-
-/* Members under one generation heading. The design tabs by part
-   — Frontend / Server / Design / DevOps — but Design is two people and
-   DevOps two more, so four columns would be two long ones and two stubs.
-   Generations divide the same 33 people evenly, so that is what the page
-   groups by, and the part rides along on each card instead. */
-export interface GenerationGroup {
-  key: string;
-  label: string;
-  members: TeamMember[];
-}

@@ -41,6 +41,20 @@ const fieldClass =
   "placeholder:text-muted hover:border-line-strong " +
   "focus:border-accent focus:bg-glass-lit";
 
+/* The message box grows with what is typed into it rather than handing the
+   visitor a drag handle. A textarea has no intrinsic way to do this, and the
+   height has to be cleared before scrollHeight is read: scrollHeight never
+   reports less than the height already set, so measuring without the reset
+   gives a box that only ever gets taller.
+
+   resize-none goes with it. Leaving the handle on a box that sizes itself
+   gives two answers to the same question, and a box dragged smaller would be
+   undone by the next keystroke. */
+function autoGrow(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 /* Its own component so it can read the pending state of the form above it.
    useFormStatus only reports for a form an ancestor of the component that
    calls it, which is why this is not inlined. */
@@ -64,8 +78,13 @@ export default function ContactSection() {
   const [state, formAction] = useActionState(sendContact, INITIAL_CONTACT_STATE);
 
   return (
-    <section id="contact" className="relative flex min-h-dvh w-full flex-col bg-veil scroll-mt-16">
-      <RevealGroup className="mx-auto flex w-full max-w-column grow flex-col justify-center items-center px-gutter py-section">
+    <section id="contact" className="relative flex min-h-dvh w-full flex-col bg-veil">
+      {/* py-block rather than the comp's 160: with the content centred in a
+          full-height section the padding is only a floor, and at 160 the form
+          pushed Contact 164px past a screen — one extra half-gesture at the
+          very end of the page. Nothing moves on a window with room to
+          spare. */}
+      <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-block">
         <Reveal as="h2" className="text-display font-bold text-white">
           Contact
         </Reveal>
@@ -95,7 +114,12 @@ export default function ContactSection() {
                     rows={5}
                     required
                     placeholder={field.placeholder}
-                    className={`${fieldClass} min-h-[120px] resize-y`}
+                    onInput={(e) => autoGrow(e.currentTarget)}
+                    /* overflow-hidden goes with it: the box is always as tall
+                       as its content, so there is nothing to scroll, and a
+                       bar flickering in on the line that overflows would undo
+                       the point of the whole thing. */
+                    className={`${fieldClass} min-h-[120px] resize-none overflow-hidden`}
                   />
                 ) : (
                   <input

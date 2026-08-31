@@ -164,8 +164,11 @@
   86% { opacity: 1; }
   100% { opacity: 0; }
 }
+/* The cover is 40% rather than solid: the particle field is already running
+   behind it, and letting it read faintly through means the hero is being
+   uncovered rather than switched on. */
 @keyframes tmVeilOut {
-  from { opacity: 1; }
+  from { opacity: 0.4; }
   to { opacity: 0; }
 }
 @keyframes tmDock {

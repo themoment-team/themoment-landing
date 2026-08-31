@@ -1,6 +1,7 @@
 import "server-only";
 
-import type { GenerationGroup, TeamMember } from "../model/types";
+import { ROSTER } from "../model/roster";
+import type { TeamMember } from "../model/types";
 import {
   cleanGithubId,
   readGeneration,
@@ -91,25 +92,30 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
   const secret = process.env.NOTION_SECRET_API_KEY;
   const databaseId = process.env.NOTION_MEMBER_DATABASE_ID;
 
-  /* No key is a normal state for a fresh checkout, not a crash. The section
-     renders its empty state and says so; readygsm-client's member fetch
-     omits this guard and requests /databases/undefined/query instead. */
+  /* No key is a normal state for a fresh checkout, not a crash, and it is
+     the state the repo is in today. The written-down roster carries the
+     section until someone puts a secret in .env.local; readygsm-client's
+     member fetch omits this guard and requests /databases/undefined/query
+     instead. */
   if (!secret || !databaseId) {
-    console.warn("[team] NOTION_SECRET_API_KEY / NOTION_MEMBER_DATABASE_ID not set — see .env.example");
-    return [];
+    console.warn("[team] NOTION_SECRET_API_KEY / NOTION_MEMBER_DATABASE_ID not set — using the roster in model/roster.ts");
+    return ROSTER;
   }
 
   let pages: NotionPage[];
   try {
     pages = await queryAll(databaseId, secret);
   } catch (err) {
-    /* A Notion outage should cost the page its team section, not the whole
-       render. Everything else on the page is static. */
+    /* A Notion outage should cost neither the team section nor the render.
+       Everything else on the page is static, and the roster is right often
+       enough to be a better answer than an apology. */
     console.error("[team]", err instanceof Error ? err.message : err);
-    return [];
+    return ROSTER;
   }
 
-  if (!pages.length) return [];
+  /* A database that is reachable but empty is a database someone is part way
+     through setting up. */
+  if (!pages.length) return ROSTER;
 
   const fields = resolveFields(pages[0].properties);
 
@@ -134,12 +140,10 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
         generationLabel,
         status: read("status"),
         tagline: read("tagline"),
-        /* A picture the database points at wins; otherwise GitHub draws
-           one. github.com/{id}.png redirects to the account's avatar, and
-           GitHub gives every account an identicon even when nobody uploaded
-           anything — so this is empty only when there is no GitHub id at
-           all. When the id is wrong the request 404s in the browser and the
-           card falls back to initials; see MemberCard. */
+        /* Kept on the model even though the chips no longer draw a picture
+           — the comp has none. A picture the database points at wins;
+           otherwise GitHub's own endpoint, which draws an identicon for any
+           account that never uploaded one. */
         avatarUrl: avatar || (githubId ? `https://github.com/${githubId}.png` : ""),
         link: read("link") || (githubId ? `https://github.com/${githubId}` : ""),
         order: order === "" ? null : Number(order),
@@ -152,22 +156,4 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
 
   members.sort(compare);
   return members;
-}
-
-/* The design tabs the team by part, but Design is two people and DevOps two
-   more — four columns would be two long ones and two stubs. Generations cut
-   the same 33 people into even groups, so that is what the page shows. */
-export function groupByGeneration(members: TeamMember[]): GenerationGroup[] {
-  const groups = new Map<string, GenerationGroup>();
-
-  for (const member of members) {
-    const key = member.generationLabel || "기타";
-    const existing = groups.get(key);
-    if (existing) existing.members.push(member);
-    else groups.set(key, { key, label: key, members: [member] });
-  }
-
-  /* The members are already sorted, so the first member of each group
-     carries the group's own position. */
-  return [...groups.values()];
 }

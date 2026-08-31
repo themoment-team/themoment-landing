@@ -1,78 +1,37 @@
-"use client";
-
-import { useState } from "react";
 import type { TeamMember } from "../model/types";
 
-/* Korean names have no whitespace to take initials from, and the first
-   character is the family name — a wall of 이, 김, 박 tells you nothing
-   about who is who. The given name is the distinguishing half, so that is
-   what is drawn. Latin names fall back to the usual first letters. */
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  if (words.length > 1) return words.slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  return name.length <= 2 ? name : name.slice(-2);
-}
+/* One member, as the comp draws them: a hairline rectangle with a name in
+   it. No avatar and no part — the comp has neither, and thirty-three GitHub
+   avatars were thirty-three requests to another host for decoration. The
+   generation follows the name, set quieter than it, so a chip still says
+   which year it belongs to when the list is cut by part.
 
-/* One member. A glass plate over the dark: a hairline, a barely-there fill,
-   and a blur behind it, all of which come up when the card is pointed at.
+   Hovering adds where the chip goes, to the right of the name rather than
+   over it: the name is what the reader was looking at and has no reason to
+   leave. The label is positioned rather than laid out, so it reserves no
+   width and the row does not shift as the pointer crosses it. */
+/* Exported so the roster can reserve a chip's worth of space with an empty
+   one, and have it come out exactly the same height. */
+export const CHIP_SHELL =
+  "relative flex w-full items-center border border-white p-3 text-label font-medium";
 
-   A plain <img> rather than next/image. These are 400px GitHub avatars from
-   a host the optimiser would have to be told about, thirty-odd of them on
-   one screen, and the one thing they need — a fallback when the account
-   turns out not to exist — is a plain onError. */
 export default function MemberCard({ member }: { member: TeamMember }) {
-  const [src, setSrc] = useState(member.avatarUrl);
-  const githubAvatar = member.githubId ? `https://github.com/${member.githubId}.png` : "";
+  const shell = CHIP_SHELL;
 
-  /* github.com/{id}.png draws an identicon for any account that never
-     uploaded a picture, so a 404 means the account does not exist rather
-     than that they have no photo. A picture the database pointed at can
-     also have gone — a Notion upload is a signed URL that expires in about
-     an hour. Either way: try GitHub, then give up and draw initials. */
-  const handleError = () => {
-    if (githubAvatar && src !== githubAvatar) setSrc(githubAvatar);
-    else setSrc("");
-  };
-
-  const body = (
-    <>
-      <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-glass">
-        {src ? (
-          <img
-            src={src}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onError={handleError}
-            className="size-full object-cover"
-          />
-        ) : (
-          <span aria-hidden className="text-label font-medium text-muted">
-            {initials(member.name)}
-          </span>
-        )}
-      </span>
-
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate text-label font-medium text-white">{member.name}</span>
-        {member.role ? (
-          <span className="truncate text-[12px] leading-[1.4] font-medium text-muted transition-colors duration-500 ease-out group-hover:text-accent">
-            {member.role}
-          </span>
-        ) : null}
-      </span>
-    </>
+  const name = (
+    <span className="truncate text-white">
+      {member.name}
+      {member.generationLabel ? (
+        <span className="text-muted"> {member.generationLabel}</span>
+      ) : null}
+    </span>
   );
 
-  const shell =
-    "group flex items-center gap-3 rounded-xl border border-line bg-glass p-3 " +
-    "backdrop-blur-sm transition-[background-color,border-color,transform] duration-500 ease-out";
-
-  /* A card with nowhere to go is not a link. Rendered as an anchor with an
+  /* A chip with nowhere to go is not a link. Rendered as an anchor with an
      empty href it would still be focusable, still announced as a link, and
      would reload the page when pressed. */
   if (!member.link) {
-    return <div className={shell}>{body}</div>;
+    return <div className={shell}>{name}</div>;
   }
 
   return (
@@ -80,9 +39,33 @@ export default function MemberCard({ member }: { member: TeamMember }) {
       href={member.link}
       target="_blank"
       rel="noopener noreferrer"
-      className={`${shell} hover:-translate-y-0.5 hover:border-line-strong hover:bg-glass-lit focus-visible:border-line-strong focus-visible:bg-glass-lit focus-visible:outline-none`}
+      className={`${shell} group overflow-hidden transition-colors duration-300 ease-out hover:border-accent focus-visible:border-accent focus-visible:outline-none`}
     >
-      {body}
+      {name}
+
+      {/* Decoration: it says the same thing the link already says, so a
+          screen reader hearing it twice would learn nothing.
+
+          Hidden below sm — there is no hover on a phone, and at two columns
+          the chip has no room for a second label anyway. It arrives from
+          slightly right of where it lands, which is the same direction the
+          arrow points. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-3 hidden translate-x-1 items-center gap-1.5 whitespace-nowrap text-accent opacity-0 transition-[opacity,transform] duration-300 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 sm:flex"
+      >
+        깃허브로 이동
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path
+            d="M1 9L9 1M9 1H3.5M9 1V6.5"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+
       <span className="sr-only">GitHub 프로필 열기</span>
     </a>
   );
