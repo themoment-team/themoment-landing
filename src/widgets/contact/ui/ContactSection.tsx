@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Reveal from "@/shared/ui/Reveal";
 import RevealGroup from "@/shared/ui/RevealGroup";
@@ -35,6 +35,10 @@ const FIELDS = [
   },
 ] as const;
 
+type FieldKey = (typeof FIELDS)[number]["key"];
+
+const EMPTY: Record<FieldKey, string> = { name: "", email: "", message: "" };
+
 const fieldClass =
   "w-full border border-line bg-glass px-3 py-3 text-label font-medium text-white " +
   "outline-none transition-colors duration-500 ease-out " +
@@ -45,11 +49,7 @@ const fieldClass =
    visitor a drag handle. A textarea has no intrinsic way to do this, and the
    height has to be cleared before scrollHeight is read: scrollHeight never
    reports less than the height already set, so measuring without the reset
-   gives a box that only ever gets taller.
-
-   resize-none goes with it. Leaving the handle on a box that sizes itself
-   gives two answers to the same question, and a box dragged smaller would be
-   undone by the next keystroke. */
+   gives a box that only ever gets taller. */
 function autoGrow(el: HTMLTextAreaElement) {
   el.style.height = "auto";
   el.style.height = `${el.scrollHeight}px`;
@@ -58,13 +58,16 @@ function autoGrow(el: HTMLTextAreaElement) {
 /* Its own component so it can read the pending state of the form above it.
    useFormStatus only reports for a form an ancestor of the component that
    calls it, which is why this is not inlined. */
-function SubmitButton() {
+function SubmitButton({ ready }: { ready: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      disabled={pending}
-      className="mt-2 w-full bg-accent px-8 py-4 text-label font-semibold text-white transition-[background-color,opacity] duration-500 ease-out hover:bg-white hover:text-ink focus-visible:bg-white focus-visible:text-ink focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:self-end"
+      /* Off until there is something to send. The action validates again on
+         the server — this is only so the button stops inviting a press that
+         could not go anywhere. */
+      disabled={!ready || pending}
+      className="w-full bg-accent px-8 py-4 text-label font-semibold text-white transition-[background-color,opacity] duration-500 ease-out hover:bg-white hover:text-ink focus-visible:bg-white focus-visible:text-ink focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent disabled:hover:text-white"
     >
       {pending ? "보내는 중" : "보내기"}
     </button>
@@ -73,17 +76,48 @@ function SubmitButton() {
 
 /* The comp has no submit button — three fields and nothing to press. So the
    button is built here, in the page's own language: the one blue on the
-   page, inverting to white on hover the way the links do. */
+   page, inverting to white on hover the way the links do, and the width of
+   the form it belongs to. */
 export default function ContactSection() {
   const [state, formAction] = useActionState(sendContact, INITIAL_CONTACT_STATE);
+  const [values, setValues] = useState(EMPTY);
+
+  /* When the form was first touched, for the action's too-fast check. Kept
+     in a ref and written straight onto a hidden input: it is not something
+     the page renders, and putting it in state would re-render on every
+     keystroke for nothing. */
+  const startedAt = useRef(0);
+  const elapsedRef = useRef<HTMLInputElement>(null);
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  const ready = FIELDS.every((field) => values[field.key].trim() !== "");
+
+  const handleChange = (key: FieldKey) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!startedAt.current) startedAt.current = Date.now();
+    setValues((prev) => ({ ...prev, [key]: event.target.value }));
+  };
+
+  /* Written after the render rather than inside the change handler, where
+     the ref is not guaranteed to be attached yet — it was being set on a
+     node that did not exist, and the field went to the server empty. */
+  useEffect(() => {
+    if (!elapsedRef.current) return;
+    elapsedRef.current.value = startedAt.current ? String(Date.now() - startedAt.current) : "";
+  }, [values]);
+
+  /* React clears an uncontrolled form itself once an action succeeds; these
+     are controlled, so they are cleared here — along with the message box's
+     measured height, which would otherwise stay at the size of a letter that
+     has already been sent. */
+  useEffect(() => {
+    if (state.status !== "sent") return;
+    setValues(EMPTY);
+    startedAt.current = 0;
+    if (messageRef.current) messageRef.current.style.height = "";
+  }, [state]);
 
   return (
     <section id="contact" className="relative flex min-h-dvh w-full flex-col bg-veil">
-      {/* py-block rather than the comp's 160: with the content centred in a
-          full-height section the padding is only a floor, and at 160 the form
-          pushed Contact 164px past a screen — one extra half-gesture at the
-          very end of the page. Nothing moves on a window with room to
-          spare. */}
       <RevealGroup className="mx-auto flex w-full grow flex-col justify-center items-center px-gutter py-block">
         <Reveal as="h2" className="text-display font-bold text-white">
           Contact
@@ -94,31 +128,32 @@ export default function ContactSection() {
           <span className="text-accent">더모먼트</span>와 함께 순간을 혁신하세요
         </Reveal>
 
-        {/* 600 wide in the comp, centred in a 1280 column. */}
+        {/* 600 wide in the comp, centred in the column. */}
         <form action={formAction} className="mt-block flex w-full max-w-[600px] flex-col gap-stack">
           {FIELDS.map((field, i) => {
             const id = `contact-${field.key}`;
             return (
-              <Reveal
-                key={field.key}
-                delay={beat(i, GROUP)}
-                className="flex w-full flex-col gap-2"
-              >
+              <Reveal key={field.key} delay={beat(i, GROUP)} className="flex w-full flex-col gap-2">
                 <label htmlFor={id} className="text-label font-medium text-white">
                   {field.label}
                 </label>
                 {field.type === "textarea" ? (
                   <textarea
+                    ref={messageRef}
                     id={id}
                     name={field.key}
                     rows={5}
                     required
                     placeholder={field.placeholder}
+                    value={values[field.key]}
+                    onChange={handleChange(field.key)}
                     onInput={(e) => autoGrow(e.currentTarget)}
-                    /* overflow-hidden goes with it: the box is always as tall
-                       as its content, so there is nothing to scroll, and a
-                       bar flickering in on the line that overflows would undo
-                       the point of the whole thing. */
+                    /* overflow-hidden goes with the growing: the box is
+                       always as tall as its content, so there is nothing to
+                       scroll, and a bar flickering in on the line that
+                       overflows would undo the point of it. resize-none for
+                       the same reason — a handle would be a second answer to
+                       a question the box already answers. */
                     className={`${fieldClass} min-h-[120px] resize-none overflow-hidden`}
                   />
                 ) : (
@@ -129,6 +164,8 @@ export default function ContactSection() {
                     required
                     autoComplete={field.autoComplete}
                     placeholder={field.placeholder}
+                    value={values[field.key]}
+                    onChange={handleChange(field.key)}
                     className={fieldClass}
                   />
                 )}
@@ -136,8 +173,18 @@ export default function ContactSection() {
             );
           })}
 
+          {/* The honeypot. Pushed off-screen rather than display:none —
+              there are bots that skip hidden fields and fill everything
+              else. Nobody who can see the page can reach it, so anything in
+              it came from something that was not looking. */}
+          <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
+            <label htmlFor="contact-company">Company</label>
+            <input id="contact-company" name="company" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
+          <input ref={elapsedRef} type="hidden" name="elapsed" defaultValue="" />
+
           <Reveal delay={beat(FIELDS.length, GROUP)} className="flex flex-col gap-3">
-            <SubmitButton />
+            <SubmitButton ready={ready} />
             {/* One line for every outcome, held in the live region the whole
                 time rather than mounted when there is news — a region that
                 arrives with its text already in it is one screen readers may
@@ -152,7 +199,7 @@ export default function ContactSection() {
                 state.status === "sent" ? "text-accent" : "text-white"
               } ${state.message ? "opacity-100" : "opacity-0"}`}
             >
-              {state.message || " "}
+              {state.message || " "}
             </p>
           </Reveal>
         </form>
