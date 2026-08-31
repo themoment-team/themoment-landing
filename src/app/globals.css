@@ -43,6 +43,15 @@
      rather than as a second colour, which a neutral grey would. */
   --color-accent-dim: #1e3363;
   --color-muted: #666666;
+  /* The same job as --color-muted, on the two sections laid on white. #666
+     there is still dark enough to compete with the type it is meant to sit
+     behind, so the list read as three live values rather than one.
+
+     Held just over 3:1 against white. Everywhere it is used is 24px or
+     larger, which is the size at which 3:1 is the accessible floor — a
+     lighter grey read better as "off" but put the two values nobody is
+     reading below it. */
+  --color-faint: #8e94a2;
 
   /* The comp draws every border in solid white, which at 1px on near-black
      is louder than it looks at 100% zoom — it turns a grid of thirty name
@@ -66,7 +75,7 @@
   --text-headline: clamp(34px, 4.6vw, 48px);
   --text-headline--line-height: 1.1;
 
-  --text-statement: clamp(21px, 2.3vw, 32px);
+  --text-statement: clamp(24px, 2.9vw, 42px);
   --text-statement--line-height: 1.4;
 
   --text-tab: clamp(17px, 1.7vw, 24px);
@@ -75,7 +84,7 @@
   --text-numeral: clamp(16px, 1.7vw, 24px);
   --text-numeral--line-height: 1.4;
 
-  --text-body: clamp(15px, 1.15vw, 16px);
+  --text-body: clamp(16px, 1.3vw, 19px);
   --text-body--line-height: 1.6;
 
   --text-label: 14px;

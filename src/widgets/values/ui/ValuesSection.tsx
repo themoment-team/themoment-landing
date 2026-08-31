@@ -136,15 +136,15 @@ export default function ValuesSection() {
                     className={`w-[38px] shrink-0 text-numeral font-medium transition-colors duration-500 ease-out ${
                       /* On white the dimmed blue reads darker than the type
                          it is meant to sit behind, so the off state is the
-                         same grey the name takes. */
-                      isActive ? "text-accent" : "text-muted"
+                         same faint grey the name takes. */
+                      isActive ? "text-accent" : "text-faint"
                     }`}
                   >
                     {value.num}
                   </span>
                   <p
                     className={`text-headline font-semibold transition-colors duration-500 ease-out ${
-                      isActive ? "text-graphite" : "text-muted"
+                      isActive ? "text-graphite" : "text-faint"
                     }`}
                   >
                     {value.name}
