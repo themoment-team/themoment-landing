@@ -1,6 +1,4 @@
-import ParticleField from "@/shared/ui/ParticleField";
-import { INTRO } from "@/shared/lib/timing";
-import IntroOverlay from "@/widgets/intro/ui/IntroOverlay";
+import Opening from "@/widgets/intro/ui/Opening";
 import HeroSection from "@/widgets/hero/ui/HeroSection";
 import AboutSection from "@/widgets/about/ui/AboutSection";
 import ValuesSection from "@/widgets/values/ui/ValuesSection";
@@ -31,13 +29,9 @@ import Footer from "@/widgets/footer/ui/Footer";
 export default function LandingPage() {
   return (
     <>
-      {/* The backdrop, and the cover over it, mounted together because their
-          timing is one thing: the field holds its dust until the intro has
-          lifted, then gathers into the mark. Started earlier it would do all
-          of that behind an opaque veil, and the hero would be revealed onto
-          an animation already halfway through its icon cycle. */}
-      <ParticleField openDelay={INTRO.ends} />
-      <IntroOverlay />
+      {/* The field behind the page and the cover over it, and the timing that
+          binds them: black until the field has painted, then the opening. */}
+      <Opening />
       <main className="flex w-full flex-col items-stretch">
         <HeroSection />
         <AboutSection />

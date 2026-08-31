@@ -164,12 +164,24 @@
   86% { opacity: 1; }
   100% { opacity: 0; }
 }
-/* The cover is 40% rather than solid: the particle field is already running
-   behind it, and letting it read faintly through means the hero is being
-   uncovered rather than switched on. */
+/* The cover is 60% rather than solid: the particle field is already running
+   behind it, and letting it read through means the hero is being uncovered
+   rather than switched on. */
 @keyframes tmVeilOut {
-  from { opacity: 0.4; }
+  from { opacity: 0.6; }
   to { opacity: 0; }
+}
+
+/* The backstop for the state below. Nothing but a hard stop: hold the black
+   for two seconds and then clear it whatever happened. */
+@keyframes tmHolding {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 @keyframes tmDock {
   from { transform: none; }
@@ -177,6 +189,28 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* ---- waiting for the field ----
+     Solid black, and nothing drawn on it, until the particle field behind
+     has painted its first frame. Opening swaps this for .run the moment it
+     has, so the mark is never drawn over an empty canvas.
+
+     The animation is a dead man's switch, not the effect: it holds the black
+     and then clears it after two seconds whatever happens. Without it a
+     page whose JavaScript never ran — or whose field never painted — would
+     stay black for good, which is a far worse failure than an opening that
+     starts a beat early. It only ever finishes when something has gone
+     wrong; normally .holding is gone within a few hundred milliseconds.
+
+     Inside the reduced-motion query with everything else, so a visitor who
+     asked for no motion gets the finished page immediately rather than a
+     black screen and a wait. */
+  .holding .veil {
+    animation: tmHolding 2s linear both;
+  }
+  .holding .lockup {
+    opacity: 0;
+  }
+
   /* drawing the mark */
   .run .mark { animation: tmCard 0.62s cubic-bezier(0.2, 0.82, 0.26, 1) 0.05s both; }
   .run .wMain { animation: tmDraw 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both; }

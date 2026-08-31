@@ -24,9 +24,13 @@ const SCATTER_AT = 0.35;
 export default function ParticleField({
   openDelay,
   onReady,
+  onGathered,
 }: {
   openDelay?: number;
   onReady?: (field: Field) => void;
+  /* Fired when the grains have finished travelling into the mark, which is
+     about a second and a half after the gather is asked for. */
+  onGathered?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fieldRef = useRef<Field | null>(null);
@@ -36,14 +40,22 @@ export default function ParticleField({
      page above it. */
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const onGatheredRef = useRef(onGathered);
+  onGatheredRef.current = onGathered;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const field = mountParticleField(canvas, { openDelay });
+    const field = mountParticleField(canvas, {
+      openDelay,
+      /* Handed on when the field has actually painted, not when it has been
+         mounted. The opening waits on this, and mount returns while the
+         shapes are still being built. */
+      onReady: () => onReadyRef.current?.(field),
+      onGathered: () => onGatheredRef.current?.(),
+    });
     fieldRef.current = field;
-    onReadyRef.current?.(field);
 
     /* StrictMode runs this twice in development. Without a destroy() that
        truly stops everything, the second mount leaves two animation loops and

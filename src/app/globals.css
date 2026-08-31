@@ -212,6 +212,31 @@ section {
   }
 }
 
+/* ---------- what waits for the opening ----------
+   The hero's navigation and its scroll cue arrive once the mark has finished
+   docking, not before. A scroll reveal cannot do this — both are in view
+   from the first paint, behind the cover, so their cue would fire while the
+   screen is still black.
+
+   Hidden by an attribute rather than by default, and only while it says
+   "holding". A page whose JavaScript never runs sets no attribute at all,
+   and has to end up showing both. */
+
+.after-intro {
+  transition: opacity 700ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+:root[data-intro="holding"] .after-intro {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No opening to wait for, so nothing to be held back by. */
+  :root[data-intro="holding"] .after-intro {
+    opacity: 1;
+  }
+}
+
 /* ---------- swapping parts ----------
    The chips are remounted when the tab changes, so this plays on arrival.
    Staggered by a hand from the component, and capped there so a part with

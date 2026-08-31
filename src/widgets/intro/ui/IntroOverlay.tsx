@@ -25,7 +25,7 @@ const FADE_END = 160;
 
 const WORDMARK = 'the_moment';
 
-export default function IntroOverlay() {
+export default function IntroOverlay({ start }: { start: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,7 +57,10 @@ export default function IntroOverlay() {
      *  than swapping the class off, is what stops a half-drawn mark being
      *  left behind. */
     const finishNow = () => {
-      if (docked) return;
+      /* Nothing to finish before the opening has started, and the only
+         animation running then is the black hold — ending that early would
+         skip the opening rather than skip ahead in it. */
+      if (!start || docked) return;
       docked = true;
       el.getAnimations({ subtree: true }).forEach((a) => {
         try { a.finish(); } catch { /* nothing here repeats forever */ }
@@ -82,7 +85,11 @@ export default function IntroOverlay() {
     setDockDistance();
     applyFade();
 
-    const timer = window.setTimeout(() => { docked = true; }, DOCK_AT + 950);
+    /* Measured from the moment the opening actually starts, not from mount:
+       it waits on the field behind it, so the two are not the same instant. */
+    const timer = start
+      ? window.setTimeout(() => { docked = true; }, DOCK_AT + 950)
+      : 0;
     window.addEventListener('resize', setDockDistance);
     window.addEventListener('scroll', onScroll, { passive: true });
 
@@ -91,12 +98,16 @@ export default function IntroOverlay() {
       window.removeEventListener('resize', setDockDistance);
       window.removeEventListener('scroll', onScroll);
     };
-  }, []);
+  }, [start]);
 
   return (
     // .run ships in the server markup, so the opening starts on the first
     // paint instead of waiting for hydration
-    <div ref={ref} className={`${styles.intro} ${styles.run}`} aria-hidden="true">
+    <div
+      ref={ref}
+      className={`${styles.intro} ${start ? styles.run : styles.holding}`}
+      aria-hidden="true"
+    >
       <div className={styles.veil} />
 
       <div className={styles.lockup}>

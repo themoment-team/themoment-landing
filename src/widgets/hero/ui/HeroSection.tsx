@@ -1,5 +1,3 @@
-import Reveal from "@/shared/ui/Reveal";
-import { BEAT, beat } from "@/shared/lib/timing";
 import ScrollCue from "./ScrollCue";
 
 /* The four the design puts in the corner. Values is deliberately not among
@@ -18,8 +16,14 @@ const NAV = [
    That emptiness is the point. Neither of the two things this screen is
    actually made of belongs to it — the mark gathering itself out of a cloud
    of sixteen thousand particles is the field fixed behind the whole
-   document, and the logo at the top is the intro's lockup, which docks
-   there and stays. Everything this component draws is type. */
+   document, and the logo at the top is the intro's lockup, which docks there
+   and stays. Everything this component draws is type.
+
+   Both of the things it does draw wait for the opening to finish. They are
+   held by `after-intro`, which reads an attribute the Opening component sets
+   on the root — see globals.css. A scroll reveal cannot do it: the reveal
+   fires on the element crossing into view, and both of these are in view
+   from the first paint, behind the cover. */
 export default function HeroSection() {
   return (
     <section className="relative flex min-h-dvh w-full flex-col overflow-hidden">
@@ -50,10 +54,13 @@ export default function HeroSection() {
             370px, the centred mark starts at half the width, and between
             640 and 1024 the two overlap — at 785 the mark lands on top of
             Contact. */}
-        <nav aria-label="주요 섹션" className="lg:absolute lg:top-8 lg:left-gutter">
+        <nav
+          aria-label="주요 섹션"
+          className="after-intro lg:absolute lg:top-8 lg:left-gutter"
+        >
           <ul className="flex items-stretch justify-center gap-2 sm:gap-6">
-            {NAV.map((item, i) => (
-              <Reveal as="li" key={item.label} variant="reveal-up" delay={beat(i)}>
+            {NAV.map((item) => (
+              <li key={item.label}>
                 <a
                   href={item.href}
                   /* py-3 rather than py-2: at 14px the row is 37px tall, and
@@ -62,7 +69,7 @@ export default function HeroSection() {
                 >
                   {item.label}
                 </a>
-              </Reveal>
+              </li>
             ))}
           </ul>
         </nav>
@@ -72,17 +79,12 @@ export default function HeroSection() {
           between the header and the cue and draws nothing. */}
       <div className="grow" />
 
-      {/* rootMargin 0 rather than the reveal default. The default holds an
-          element back until it is 12% clear of the bottom of the screen, and
-          the cue sits inside that 12% from the first paint — so it never
-          crossed the line, never fired, and simply never appeared. */}
-      <Reveal
-        delay={beat(NAV.length) + BEAT}
-        rootMargin="0px"
-        className="relative z-10 flex flex-col items-center pb-10"
-      >
+      {/* Two layers, because two things want this element's opacity: the
+          wrapper waits for the opening, and the cue inside fades as the page
+          scrolls. Multiplied, rather than one overwriting the other. */}
+      <div className="after-intro relative z-10 flex flex-col items-center pb-10">
         <ScrollCue />
-      </Reveal>
+      </div>
     </section>
   );
 }

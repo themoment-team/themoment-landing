@@ -78,6 +78,17 @@ const ICON_SRC: Record<string, string> = {
 const ICON_ORDER = ["front", "devops"];
 
 export interface ParticleFieldOptions {
+  /* Called once, the first time a frame has actually been painted — not
+     when mount returns. The shapes are rasterised and the icons decoded
+     asynchronously, so there is a stretch after mounting where the canvas is
+     still blank; the opening waits on this so it does not play over
+     nothing. */
+  onReady?: () => void;
+
+  /* Called once, when the grains have finished travelling into the mark —
+     not when the gather was asked for. The two are about a second and a half
+     apart, and that second and a half is the whole of the effect. */
+  onGathered?: () => void;
   /* How long the field stays a loose cloud before it gathers into the mark.
      The default is the source page's own opening. The landing hands it the
      length of the intro instead, so the grains come together as the cover
@@ -87,7 +98,7 @@ export interface ParticleFieldOptions {
 
 export function mountParticleField(
   canvas: HTMLCanvasElement,
-  { openDelay = 430 }: ParticleFieldOptions = {},
+  { openDelay = 430, onReady, onGathered }: ParticleFieldOptions = {},
 ): ParticleField {
   const context = canvas.getContext("2d", { alpha: false });
   if (!context) throw new Error("particleField: no 2d context");
@@ -339,6 +350,11 @@ export function mountParticleField(
     const AMP = new Float32Array(N), FRQ = new Float32Array(N), GRAIN = new Float32Array(N);
     const MAXR = 180;
     let MMAX = 0;
+    /* The last grain to land when the field assembles. Every grain leaves on
+       its own delay and flies for its own duration, so the gather is over at
+       the largest of those sums — not at the average, and not at the moment
+       it was asked for. */
+    let GMAX = 0;
 
     const HX = shapes[0].x, HY = shapes[0].y;
     for (let i = 0; i < N; i++) {
@@ -352,6 +368,7 @@ export function mountParticleField(
       const d = Math.sqrt(ax * ax + ay * ay) || 1;
       DELAY[i] = 0.17 * (d / MAXR) + Math.random() * 0.17;
       DUR[i] = 0.42 + Math.random() * Math.random() * 1.15;
+      if (DELAY[i] + DUR[i] > GMAX) GMAX = DELAY[i] + DUR[i];
       DELAYB[i] = Math.random() * 0.09 + 0.07 * (d / MAXR);
       DURB[i] = 0.32 + Math.random() * Math.random() * 1.25;
       MDELAY[i] = Math.random() * 0.2;
@@ -582,6 +599,15 @@ export function mountParticleField(
       tPhase += dt;
       mPhase += dt;
 
+      /* The mark is assembled: the field asked for it GMAX seconds ago and
+         the last grain has now landed. Said once — the field goes on to
+         scatter and gather again as the page is scrolled, and this is about
+         the opening, not about every gather after it. */
+      if (!gathered && MODE === 1 && tPhase >= GMAX) {
+        gathered = true;
+        onGathered?.();
+      }
+
       if (auto && MODE === 1 && clock > cycleAt) {
         morphTo((shapeTo + 1) % shapes.length);
         cycleAt = clock + CYCLE;
@@ -716,8 +742,20 @@ export function mountParticleField(
         ctx.fillRect(bufX[id] | 0, bufY[id] | 0, szp, szp);
       }
 
+      /* The canvas now has something on it. Said once, and from inside the
+         frame rather than after mount returns: the shapes are rasterised and
+         the icons decoded asynchronously, so mount returns while the canvas
+         is still blank. */
+      if (!announced) {
+        announced = true;
+        onReady?.();
+      }
+
       if (running && !destroyed) rafId = requestAnimationFrame(frame);
     }
+
+    let announced = false;
+    let gathered = false;
 
     /* Whether the loop is meant to be going, tracked outright rather than
        inferred from rafId.
