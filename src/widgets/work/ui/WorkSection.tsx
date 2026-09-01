@@ -41,6 +41,19 @@ const WORK = [
   },
 ];
 
+function ArrowRightIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="size-4 shrink-0 stroke-current stroke-[2.25]"
+    >
+      <path d="M4 12h15M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 export default function WorkSection() {
   return (
     <section id="work" className="relative flex min-h-dvh w-full flex-col bg-white">
@@ -105,7 +118,10 @@ export default function WorkSection() {
                       <p className="text-headline font-bold text-white">{item.name}</p>
                       <p className="text-body font-medium text-white/80">{item.note}</p>
                     </div>
-                    <p className="shrink-0 pb-1 text-caption font-bold text-white">클릭해서 이동 -&gt;</p>
+                    <p className="flex shrink-0 items-center gap-2 pb-1 text-caption font-bold text-white">
+                      <span>클릭해서 이동</span>
+                      <ArrowRightIcon />
+                    </p>
                   </div>
                 </div>
               </a>
