@@ -31,7 +31,7 @@ const WORK = [
     src: "/work/ready-gsm.png",
     name: "ReadyGSM",
     note: "광주소프트웨어마이스터고 학과체험 신청 서비스",
-    href: "https://readygsm-client.vercel.app",
+    href: "https://readygsm-client-chskm2ptd-the-moment.vercel.app",
   },
   {
     src: "/work/data-gsm.png",
