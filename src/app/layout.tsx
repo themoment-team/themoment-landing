@@ -26,7 +26,9 @@ const ORGANIZATION = {
   alternateName: ["더모먼트", "THE MOMENT"],
   description: SITE_DESCRIPTION,
   url: SITE_ORIGIN,
-  logo: `${SITE_ORIGIN}/favicon.svg`,
+  /* Google's logo guidance wants at least 112px on a side and a raster it
+     can crop; the same 192 the favicon declares clears both. */
+  logo: `${SITE_ORIGIN}/icon-192.png`,
   image: `${SITE_ORIGIN}/og.png`,
   email: "yuchan.7im@gmail.com",
   sameAs: SITE_SOCIALS,
@@ -45,7 +47,22 @@ export const metadata: Metadata = {
      emitted once metadataBase knows the host. */
   ...(SITE_URL ? { alternates: { canonical: "/" } } : {}),
   icons: {
-    icon: "/favicon.svg",
+    /* Three renderings of one mark, so that whatever asks gets something it
+       can read. The .ico is what a browser fetches from the root on its own
+       and what anything that will not take a PNG falls back to; the 192 is
+       Google's recommended favicon size — they ask for a multiple of 48 —
+       and doubles as the Organization logo, which has a 112px floor.
+
+       public/favicon.svg is still the master artwork both generators draw
+       from, but it is no longer declared: it frames the mark on a rounded
+       plate with a third of the file as margin, which is right at 192px and
+       leaves a speck at 16. The rasters crop in. Declaring both would mean
+       a tab and a search result showing visibly different icons. */
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
     /* What iOS puts on a home screen and what Android uses for a bookmark.
        Neither takes the SVG, and with nothing here iOS screenshots the page
        and uses that. Drawn from the same favicon by scripts/touch-icon.html. */
