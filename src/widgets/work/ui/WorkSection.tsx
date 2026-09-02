@@ -14,21 +14,31 @@ import { BEAT, GROUP, beat } from "@/shared/lib/timing";
    Two by two rather than the comp's full-width stack: four frames at the
    width of the column ran to nearly four screens, and the set reads as a
    set when it can be seen as one. */
-const WORK = [
+type WorkItem = {
+  src: string;
+  name: string;
+  note: string;
+  href?: string;
+};
+
+const WORK: WorkItem[] = [
   {
     src: "/work/hello-gsm.png",
     name: "HelloGSM",
     note: "광주소프트웨어마이스터고 입학지원시스템",
+    href: "https://www.hellogsm.kr",
   },
   {
     src: "/work/every-gsm.png",
     name: "EveryGSM",
     note: "광주소프트웨어마이스터고등학교의 모든 프로젝트를 한곳에",
+    href: "https://www.every.datagsm.kr",
   },
   {
     src: "/work/ready-gsm.png",
     name: "ReadyGSM",
-    note: "광주소프트웨어마이스터고 학과체험 및 입학설명회 신청 서비스",
+    note: "광주소프트웨어마이스터고 학과체험 신청 서비스",
+    href: "https://readygsm-client-chskm2ptd-the-moment.vercel.app",
   },
   {
     src: "/work/data-gsm.png",
@@ -36,6 +46,71 @@ const WORK = [
     note: "광주소프트웨어마이스터고등학교 OpenAPI 및 OAuth 플랫폼",
   },
 ];
+
+function ArrowRightIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="size-4 shrink-0 stroke-current stroke-[2.25]"
+    >
+      <path d="M4 12h15M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+function ProjectCard({ item }: { item: WorkItem }) {
+  const card = (
+    <div className="relative aspect-video w-full overflow-hidden">
+      <Image
+        src={item.src}
+        alt={`${item.name} — ${item.note}`}
+        fill
+        /* The column is the screen less its two gutters, which at the comp's
+           1440 is 1280 of 1440 — near enough 89vw at any width. Without this
+           Next assumes 100vw and fetches one size larger than the slot for
+           every frame. */
+        sizes="89vw"
+        className="object-cover"
+      />
+
+      {/* Held inside the frame and against its bottom edge. The scrim is part
+          of the same layer as the text so the two arrive together. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent px-6 pt-24 pb-6 opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 group-focus-within:opacity-100 sm:px-8 sm:pt-28 sm:pb-8"
+      >
+        <div className="min-w-0">
+          <p className="text-headline font-bold text-white">{item.name}</p>
+          <p className="text-body font-medium text-white/80">{item.note}</p>
+        </div>
+        {item.href ? (
+          <p className="flex shrink-0 items-center gap-2 pb-1 text-caption font-bold text-white">
+            <span>클릭해서 이동</span>
+            <ArrowRightIcon />
+          </p>
+        ) : (
+          <p className="shrink-0 pb-1 text-caption font-bold text-white">교내 서비스입니다</p>
+        )}
+      </div>
+    </div>
+  );
+
+  if (!item.href) return <div className="block cursor-default">{card}</div>;
+
+  return (
+    <a
+      href={item.href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`${item.name} 서비스 새 탭에서 열기`}
+      className="block outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-inset"
+    >
+      {card}
+    </a>
+  );
+}
 
 export default function WorkSection() {
   return (
@@ -62,38 +137,7 @@ export default function WorkSection() {
               delay={beat(i, GROUP)}
               className="group relative w-full"
             >
-              {/* 16:9, the ratio of both the 1280x720 frames in the comp and
-                  the 3840x2160 masters they were cut from. */}
-              <div className="relative aspect-video w-full overflow-hidden">
-                <Image
-                  src={item.src}
-                  alt={`${item.name} — ${item.note}`}
-                  fill
-                  /* The column is the screen less its two gutters, which at
-                     the comp's 1440 is 1280 of 1440 — near enough 89vw at
-                     any width. Without this Next assumes 100vw and fetches
-                     one size larger than the slot for every frame. */
-                  sizes="89vw"
-                  className="object-cover"
-                />
-
-                {/* Held inside the frame and against its bottom edge. The
-                    scrim is part of the same layer as the text so the two
-                    arrive together — a separately faded scrim reads as the
-                    picture dimming and the words following it.
-
-                    pointer-events-none so the overlay cannot be what the
-                    pointer is over: without it, appearing under the cursor
-                    would end the hover it was triggered by and the caption
-                    would flicker. */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-2 bg-gradient-to-t from-black/95 via-black/70 to-transparent px-6 pt-24 pb-6 opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 sm:px-8 sm:pt-28 sm:pb-8"
-                >
-                  <p className="text-headline font-bold text-white">{item.name}</p>
-                  <p className="text-body font-medium text-white/80">{item.note}</p>
-                </div>
-              </div>
+              <ProjectCard item={item} />
             </Reveal>
           ))}
         </ul>

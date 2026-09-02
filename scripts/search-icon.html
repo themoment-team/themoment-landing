@@ -1,0 +1,78 @@
+<!doctype html>
+<!-- The tab and search-result icon, drawn from public/favicon.svg so there is
+     one mark and not two. Same idea as touch-icon.html, at a different size
+     and for a different reader.
+
+     favicon.svg is a white plate with the mark inset on it, which is right at
+     192px and wrong at 16: the arc ends up about half the width of the file
+     and a search result shows a speck. So the plate and its shadow come off
+     and the mark is scaled up to fill the square, the way a favicon usually
+     is. The white stays as a background rather than a plate — Google draws
+     favicons on white, and a browser tab wants something behind a mark that
+     is mostly thin blue line.
+
+     To redraw the raster icons, from the repo root:
+
+       for s in 16 32 48 192; do
+         "/c/Program Files/Google/Chrome/Application/chrome.exe" \
+           --headless --disable-gpu --allow-file-access-from-files \
+           --hide-scrollbars --force-device-scale-factor=1 \
+           --window-size=$s,$s --virtual-time-budget=4000 \
+           --screenshot=public/icon-$s.png \
+           "file://$PWD/scripts/search-icon.html?size=$s"
+       done
+
+     then rebuild public/favicon.ico from the first three with
+     scripts/make-favicon-ico.mjs. -->
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>search icon</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #ffffff; overflow: hidden; }
+      body { display: grid; place-items: center; }
+      #mark { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="mark"></div>
+    <script type="module">
+      const size = Number(new URLSearchParams(location.search).get("size")) || 48;
+      document.body.style.width = `${size}px`;
+      document.body.style.height = `${size}px`;
+
+      const svg = await fetch("../public/favicon.svg").then((r) => r.text());
+      const host = document.getElementById("mark");
+      host.innerHTML = svg;
+      const el = host.querySelector("svg");
+
+      /* The white plate and its shadow are the 192px file's, not this one's. */
+      el.querySelectorAll('rect[fill="white"]').forEach((r) => r.remove());
+      el.querySelectorAll("filter").forEach((f) => f.remove());
+      el.querySelectorAll("g[filter]").forEach((g) => g.removeAttribute("filter"));
+
+      /* The arc covers a bit over half of the 192 box it is drawn in, so it
+         has to be zoomed to fill a favicon. Done by cropping the viewBox
+         rather than by drawing the element larger than the page: an element
+         wider than the viewport overflows from the top left, and the
+         screenshot is taken at scroll origin, so the mark came out shifted
+         and clipped on two sides.
+
+         The mark's outer radius is 50.57 about (95.575, 96.419) — the
+         radialGradient in the file says so — which is 101.15 across. A
+         viewBox that wide over that centre would fill the square edge to
+         edge; dividing by 0.8 leaves the tenth of a side of air a glyph
+         wants on each side. */
+      const R = 50.5748;
+      const CX = 95.5751;
+      const CY = 96.419;
+      const view = (R * 2) / 0.8;
+      el.setAttribute("viewBox", `${CX - view / 2} ${CY - view / 2} ${view} ${view}`);
+      el.setAttribute("width", String(size));
+      el.setAttribute("height", String(size));
+
+      /* Tells --virtual-time-budget the page is settled. */
+      document.title = `search icon ${size}`;
+    </script>
+  </body>
+</html>
