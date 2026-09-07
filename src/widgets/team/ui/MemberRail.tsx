@@ -28,7 +28,15 @@ interface RailState {
    of this: no fade, no arrows, nothing to press. Whether the rail overflows
    is measured, not assumed, so nobody has to remember to keep a threshold in
    step with the roster. */
-export default function MemberRail({ label, children }: { label: string; children: ReactNode }) {
+export default function MemberRail({
+  label,
+  mobileHint,
+  children,
+}: {
+  label: string;
+  mobileHint?: string;
+  children: ReactNode;
+}) {
   const scroller = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLUListElement>(null);
   const [rail, setRail] = useState<RailState>({
@@ -207,6 +215,21 @@ export default function MemberRail({ label, children }: { label: string; childre
           style={{ width: `${rail.ratio * 100}%`, marginLeft: `${rail.offset * 100}%` }}
         />
       </div>
+
+      {/* One instruction for the whole rail, after the thing that scrolls
+          and its position marker. Repeating it in every mobile card made the
+          row read like a row of buttons; here it explains the gesture once
+          and stays out of the card's original proportions. Hidden from the
+          accessibility tree because every card already names its GitHub
+          destination outright. */}
+      {mobileHint ? (
+        <p
+          aria-hidden
+          className="member-rail-github-hint mt-3 text-right text-[12px] leading-normal font-medium text-accent"
+        >
+          {mobileHint}
+        </p>
+      ) : null}
     </div>
   );
 }

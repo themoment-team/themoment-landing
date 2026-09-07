@@ -113,7 +113,11 @@ export default function MemberRoster({ groups }: { groups: PartGroup[] }) {
             re-labelling the tiles in place. Which gives every tile a mount
             to animate on, and gives the rail a fresh measurement and a
             scroll position back at the start for the part just chosen. */}
-        <MemberRail key={active} label={`${shown.part} 멤버 ${shown.members.length}명`}>
+        <MemberRail
+          key={active}
+          label={`${shown.part} 멤버 ${shown.members.length}명`}
+          mobileHint={shown.members.some((member) => member.link) ? "클릭하여 깃허브 이동" : undefined}
+        >
           {shown.members.map((member, i) => (
             <MemberTile
               key={member.id}

@@ -15,9 +15,10 @@ function hueOf(seed: string): number {
 
 /* One member, as the comp draws them at node 141:4: a hairline rectangle
    holding a round avatar, the name under it, and the generation under that.
-   The original 136px tile made the portrait and the member's name read as a
-   caption beside the rest of the page. At 160px it keeps the same compact
-   proportion while giving both enough weight to be the section's subject.
+   It stays at the comp's 136px on a phone, where two tiles should still be
+   legible in the rail at once. From sm up it grows to 160px: that is where
+   the section has the room for a larger portrait without trading away the
+   sense that the row continues.
 
    The comp's border is solid #fff, which is a dark-background value — right
    here, since the page has no light mode, but it is still louder at 1px than
@@ -36,7 +37,7 @@ export default function MemberTile({
   style?: CSSProperties;
 }) {
   const shell =
-    "member-tile flex w-[160px] snap-start flex-col items-start gap-4 border border-line p-4";
+    "member-tile flex w-[136px] snap-start flex-col items-start gap-4 border border-line p-3 sm:w-[160px] sm:p-4";
 
   const body = (
     <>
@@ -56,8 +57,8 @@ export default function MemberTile({
           <img
             src={member.avatarUrl}
             alt=""
-            width={128}
-            height={128}
+            width={112}
+            height={112}
             loading="lazy"
             decoding="async"
             className="h-full w-full object-cover"
@@ -87,30 +88,20 @@ export default function MemberTile({
         ) : null}
 
         {member.link ? (
-          <>
-            {/* A touch screen has no hover in which to reveal the
-                destination, so the action is stated outright. On a precise
-                pointer the quieter line below takes over and only appears
-                when the card is being considered. CSS chooses between them
-                by capability rather than viewport width: a wide tablet is
-                still a touch screen. */}
-            <span
-              aria-hidden
-              className="member-github-touch mt-1 text-[12px] leading-normal font-medium text-accent"
-            >
-              클릭하여 깃허브 이동
-            </span>
-            <span
-              aria-hidden
-              className="member-github-hover mt-1 items-center gap-1 text-[12px] leading-normal font-medium text-accent"
-            >
-              깃허브로 이동 <span aria-hidden>→</span>
-            </span>
-          </>
+          /* Kept inside the card only where hover exists. Touch gets one
+             instruction for the rail below its scroll indicator instead of
+             repeating the same sentence in every tile. */
+          <span
+            aria-hidden
+            className="member-github-hover mt-1 items-center gap-1 text-[12px] leading-normal font-medium text-accent"
+          >
+            깃허브로 이동 <span aria-hidden>→</span>
+          </span>
         ) : (
           /* Keep cards without a profile the same height as their
-             neighbours without pretending there is somewhere to go. */
-          <span aria-hidden className="mt-1 block h-[17px]" />
+             desktop neighbours without pretending there is somewhere to
+             go. Mobile keeps the original card height. */
+          <span aria-hidden className="member-github-empty mt-1 h-[17px]" />
         )}
       </span>
     </>
