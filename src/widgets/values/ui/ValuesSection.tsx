@@ -112,8 +112,21 @@ export default function ValuesSection() {
               <span
                 key={value.num}
                 aria-hidden={i !== active}
-                className={`col-start-1 row-start-1 transition-opacity duration-500 ease-out ${
-                  i === active ? "opacity-100" : "opacity-0"
+                /* will-change is what makes the fade survive iOS. Safari
+                   hands a sticky element's scrolling to the compositor and
+                   starves the main thread while the finger is down; an
+                   un-promoted opacity change has to repaint the text every
+                   frame on that thread, so the sentence on its way out drops
+                   its frames and simply vanishes. Promoted, both halves of
+                   the crossfade run on the compositor. */
+                className={`col-start-1 row-start-1 transition-opacity duration-500 will-change-[opacity] ${
+                  /* Each half takes the easing that keeps it on screen.
+                     ease-out spends most of its travel in the first moments,
+                     which is right for the sentence arriving and wrong for
+                     the one leaving — under it the outgoing line was below a
+                     tenth of its opacity by the halfway mark and read as a
+                     cut, not a fade. */
+                  i === active ? "opacity-100 ease-out" : "opacity-0 ease-in"
                 }`}
               >
                 {value.line}
