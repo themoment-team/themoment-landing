@@ -85,18 +85,27 @@ export default function ValuesSection() {
          could not have done this. */
       style={{ minHeight: `${VALUES.length * 100}dvh` }}
     >
-      {/* Pinned for the whole of that scroll. The comp pins the sentence to
-          the top of the frame and hangs the list off the bottom, which is
-          what justify-between reproduces once the child is exactly a screen
-          tall. */}
-      <RevealGroup className="sticky top-0 mx-auto flex h-dvh w-full flex-col justify-between px-gutter py-section">
+      {/* Pinned for the whole of that scroll: the sentence above, the list
+          below, and a measured distance between them.
+
+          justify-between is what this was, and in a box that is exactly a
+          screen tall it does not set that distance — it hands over whatever
+          height is left, so the composition was a function of the window
+          rather than of the design. Measured, it ran 89px on a 1280x720
+          laptop, 359 on a phone and 487 on a tablet, and only landed on the
+          comp's 224 at exactly 1440x900. Everywhere else the two halves
+          were either shoved apart or crushed together.
+
+          So the gap is stated, and the leftover goes to the outside instead
+          — which is what justify-center does with it. */}
+      <RevealGroup className="sticky top-0 mx-auto flex h-dvh w-full flex-col justify-center px-gutter py-section">
         {/* One sentence split across the width, the way the comp sets it —
             the subject on the left, the rest hard against the right margin.
             The left half never changes; the right half is whichever value is
             being read. */}
         <Reveal
           as="div"
-          className="flex flex-col justify-between gap-2 text-statement font-bold text-graphite lg:flex-row lg:gap-stack"
+          className="flex shrink-0 flex-col justify-between gap-2 text-statement font-bold text-graphite lg:flex-row lg:gap-stack"
         >
           <span className="shrink-0">
             저희는 <span className="text-accent">좋은 서비스</span>를 위해
@@ -122,7 +131,19 @@ export default function ValuesSection() {
           </span>
         </Reveal>
 
-        <ul className="flex flex-col gap-stack">
+        {/* The distance between the two halves, as an element rather than a
+            gap, because it has to be able to give way. roomy is 220 at 1440,
+            which is the comp's own 224 to within four pixels, and 96 on a
+            phone.
+
+            It is the only one of the three that shrinks — the sentence and
+            the list are shrink-0 — so on a window too short to hold all of
+            it, this closes up and the type is never squeezed. A plain gap
+            could not do that: a gap is a floor, and there is no ceiling on
+            the one justify-between was leaving. */}
+        <div className="h-roomy shrink" />
+
+        <ul className="flex shrink-0 flex-col gap-stack">
           {VALUES.map((value, i) => {
             const isActive = active === i;
             return (
