@@ -67,28 +67,61 @@
      Seven roles. The comp uses 48 for both a section heading and a value
      name but sets them differently — 1.4 for the heading, 1.1 for the name,
      which is a display line rather than a title — so they are two roles
-     here, not one size used twice. */
+     here, not one size used twice.
 
-  --text-display: clamp(30px, 3.4vw, 48px);
+     Every ramp is clamp(phone, a line through two points, comp). The middle
+     term is written as an intercept plus a slope rather than as a bare vw,
+     and that is the whole difference: a bare 3.4vw is 12.75px at 375, so
+     the ramp sat under its own floor from a phone all the way to about 880
+     and every one of these roles was really just its minimum. Which meant
+     the numbers a phone actually rendered had never been chosen for a
+     phone — they were the bottom of a desktop ramp, and they did not agree
+     with each other or with the measure they were set across.
+
+     So each line is fixed at both ends: the comp's own number at 1440, and
+     a number picked for a 375 phone. The slopes are carried to two decimals
+     rather than exactly, which lands 1440 within a twentieth of a pixel of
+     the comp everywhere — measured, not assumed. */
+
+  --text-display: clamp(30px, 23.66px + 1.69vw, 48px);
   --text-display--line-height: 1.4;
 
-  --text-headline: clamp(34px, 4.6vw, 48px);
+  /* 28 rather than the 34 this used to land on. "Communication" is the
+     longest value name and at 34px it ran to within a few pixels of the
+     gutter on a 375 screen. */
+  --text-headline: clamp(28px, 20.96px + 1.88vw, 48px);
   --text-headline--line-height: 1.1;
 
-  --text-statement: clamp(24px, 2.9vw, 42px);
+  --text-statement: clamp(24px, 17.66px + 1.69vw, 42px);
   --text-statement--line-height: 1.4;
 
-  --text-tab: clamp(17px, 1.7vw, 24px);
+  /* 16 rather than 17: four part names and three gaps have to fit one line
+     on a phone, and at 17 they did not. */
+  --text-tab: clamp(16px, 13.2px + 0.75vw, 24px);
   --text-tab--line-height: 1.4;
 
-  --text-numeral: clamp(16px, 1.7vw, 24px);
+  --text-numeral: clamp(16px, 13.2px + 0.75vw, 24px);
   --text-numeral--line-height: 1.4;
 
-  --text-body: clamp(16px, 1.3vw, 19px);
+  /* The one that matters most, and the only role the page is read in at
+     length. 17 on a phone rather than 16 — with the wider gutter and the
+     measure below, that is a little under twenty Korean characters to the
+     line, which is where a phone wants to be. */
+  --text-body: clamp(17px, 16.3px + 0.19vw, 19px);
   --text-body--line-height: 1.6;
 
+  /* Chrome, not content: the nav, the scroll cue, field labels, the
+     footer's fine print. It does not scale because none of it is read at
+     length and all of it is sized by its tap target instead. */
   --text-label: 14px;
   --text-label--line-height: 1.4;
+
+  /* What the visitor types into, and the one size on the page that is not a
+     judgement call: under 16px, mobile Safari zooms the whole document in
+     when the field takes focus and does not zoom back out. The form was at
+     14 and did exactly that. */
+  --text-field: 16px;
+  --text-field--line-height: 1.4;
 
   /* ---------- spacing ----------
      Four steps, by the job they do rather than by size. The comp's own
@@ -99,23 +132,32 @@
      The gutter is the one that has to move most. 80px on a 375px phone
      leaves 215px of line, which is where Korean body copy starts breaking
      mid-phrase; 20px leaves 335. */
-  --spacing-gutter: clamp(20px, 5.6vw, 80px);
-  --spacing-section: clamp(88px, 11vw, 160px);
+  --spacing-gutter: clamp(24px, 4.28px + 5.26vw, 80px);
+  --spacing-section: clamp(88px, 62.65px + 6.76vw, 160px);
   /* Member, Work and Contact are read at length and are given more room
      above and below than the comp allows. Its own step rather than a bigger
      --spacing-section, because that one is also the inset of the values
      frame, where the padding is geometry — the sentence sits against the top
      of a pinned screen and the list against the bottom, and widening it
      squeezes the two together instead of opening anything up. */
-  --spacing-roomy: clamp(120px, 15vw, 220px);
-  --spacing-block: clamp(44px, 5.6vw, 80px);
-  --spacing-stack: clamp(20px, 2.8vw, 40px);
+  --spacing-roomy: clamp(96px, 52.34px + 11.64vw, 220px);
+  --spacing-block: clamp(44px, 31.32px + 3.38vw, 80px);
+  --spacing-stack: clamp(20px, 12.96px + 1.88vw, 40px);
 
   /* No content cap. The comp is one 1440 frame with 80px gutters, and the
      ask was to carry that to a full screen rather than to letterbox it —
      so the gutter is the whole of the margin and everything between them is
      content. At 1440 that is the comp exactly: 1440 less two 80s is 1280.
-     Wider than that and the content grows with the screen. */
+     Wider than that and the content grows with the screen.
+
+     Which is right for a section and wrong for a sentence. Prose given the
+     whole of that runs to a 1280px line, and there is no width of screen at
+     which that is readable — so the paragraphs, and only the paragraphs,
+     are capped at a measure. 896 is chosen to be just clear of the longest
+     line any of them draws at 1440, so the comp is untouched and the cap
+     only ever does something between a phone and a laptop, which is exactly
+     where nothing was holding them before. */
+  --container-measure: 56rem;
 }
 
 :root {
@@ -152,6 +194,20 @@ body {
   /* Set once here rather than per section: the page is white-on-dark
      throughout and only the exceptions — muted, accent — say so. */
   -webkit-font-smoothing: antialiased;
+
+  /* Korean has no spaces inside a word and the default rule does not know
+     that, so a line that runs out of room breaks between any two syllables
+     it likes. The page was doing it everywhere — "최고 인 / 재들이",
+     "서로 / 를 존중하며" — and a reader has to reassemble the word before
+     they can read it. keep-all breaks at the spaces between 어절 instead,
+     which is the rule the language actually has.
+
+     The pair matters: keep-all on its own also refuses to break a long
+     unbroken run of Latin — an email address, a URL — and lets it push out
+     of its box. break-word is the escape hatch for exactly that case and
+     nothing else. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* Reveals start displaced, so without this every entrance hands the page a

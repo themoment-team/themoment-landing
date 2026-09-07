@@ -70,7 +70,11 @@ export default function MemberRoster({ groups }: { groups: PartGroup[] }) {
             currently on — the bar only says it to people who can see it. */}
         <ul
           ref={tabsRef}
-          className="relative flex flex-wrap items-center justify-center gap-x-8 gap-y-2 sm:gap-x-12"
+          /* gap-x-5 rather than 8: four part names and three gaps have to
+              fit one line on a 375 screen, and at the old size and spacing
+              they came to 360 against 333 of room — so DevOps wrapped on
+              its own to a second row. flex-wrap stays as the backstop. */
+          className="relative flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:gap-x-12"
         >
           {groups.map((group) => {
             const isActive = group.part === active;

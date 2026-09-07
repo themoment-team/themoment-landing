@@ -119,7 +119,11 @@ export default function WorkSection() {
         <Reveal as="h2" className="text-display font-bold text-graphite">
           Work
         </Reveal>
-        <Reveal as="p" delay={BEAT} className="mt-stack text-center text-body font-medium text-graphite">
+        <Reveal
+          as="p"
+          delay={BEAT}
+          className="mx-auto mt-stack max-w-measure text-left text-body font-medium text-graphite sm:text-center"
+        >
           <span className="text-accent">더모먼트</span>는 주로 학교에 필요한 서비스를 개발합니다
           <br className="hidden sm:inline" />{" "}
           입학부터 학생 정보 관리까지 학교 전산 전반을 혁신하고 있습니다
