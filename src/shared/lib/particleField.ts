@@ -55,6 +55,46 @@ interface Shape {
 const TAU = Math.PI * 2;
 const VOID = "#000000";
 
+/* How many device pixels the backing store is allowed to be, whatever the
+   screen's own ratio says. Every frame lays a veil over the whole canvas to
+   leave the trail, so the cost of the field is the area of it — and at two
+   device pixels per CSS pixel a 4K desktop is four times the fill of the
+   same page on a phone, spent on grains that are one or two pixels square
+   inside a smear. About a 1920x1350 store; a phone never reaches it and
+   keeps its full ratio. */
+const PIXEL_BUDGET = 2_600_000;
+
+/* Sine by table. The frame asks for three of these per grain and one per
+   star — some fifty thousand calls at sixteen thousand grains — and drives
+   a wobble a few pixels wide with them, where a thousandth of a radian of
+   quantisation is not something anyone can see.
+
+   Every argument is a clock times a positive rate plus a phase in [0, TAU),
+   so none of them is ever negative and the mask is enough to wrap. */
+const SIN_N = 4096;
+const SIN_MASK = SIN_N - 1;
+const SIN_K = SIN_N / TAU;
+const SIN = new Float32Array(SIN_N);
+for (let i = 0; i < SIN_N; i++) SIN[i] = Math.sin((i / SIN_N) * TAU);
+const fsin = (x: number) => SIN[(x * SIN_K) & SIN_MASK];
+
+/* One curve for every transition: leaves at full speed, decelerates the
+   whole way in, lands exactly on the target. Nothing overshoots — the
+   variety comes from per-grain flight times, not from the curve.
+
+   Sampled rather than evaluated. Written out it is a Math.pow per grain per
+   frame for as long as anything is travelling between the cloud and the
+   mark, which is the whole of every gather and every scatter; two thousand
+   points carry the same curve to well inside a pixel of the travel. */
+const EASE_K = 8.5;
+const EASE_NORM = 1 / (1 - Math.pow(2, -EASE_K));
+const EASE_STEPS = 2048;
+const EASE = new Float32Array(EASE_STEPS + 1);
+for (let i = 0; i <= EASE_STEPS; i++)
+  EASE[i] = (1 - Math.pow(2, (-EASE_K * i) / EASE_STEPS)) * EASE_NORM;
+/* Callers clamp to [0, 1] before asking. */
+const easeOut = (x: number) => EASE[(x * EASE_STEPS) | 0];
+
 /* The mark has a pose of its own: reclined 30 degrees backward about its OWN
    horizontal axis, then turned toward its left flank. Composing them in that
    order is what makes the two tilts interact — swinging the yaw carries the
@@ -353,8 +393,9 @@ export function mountParticleField(
     /* The last grain to land when the field assembles. Every grain leaves on
        its own delay and flies for its own duration, so the gather is over at
        the largest of those sums — not at the average, and not at the moment
-       it was asked for. */
+       it was asked for. BMAX is the same number for the way back out. */
     let GMAX = 0;
+    let BMAX = 0;
 
     const HX = shapes[0].x, HY = shapes[0].y;
     for (let i = 0; i < N; i++) {
@@ -371,6 +412,7 @@ export function mountParticleField(
       if (DELAY[i] + DUR[i] > GMAX) GMAX = DELAY[i] + DUR[i];
       DELAYB[i] = Math.random() * 0.09 + 0.07 * (d / MAXR);
       DURB[i] = 0.32 + Math.random() * Math.random() * 1.25;
+      if (DELAYB[i] + DURB[i] > BMAX) BMAX = DELAYB[i] + DURB[i];
       MDELAY[i] = Math.random() * 0.2;
       MDUR[i] = 0.46 + Math.random() * Math.random() * 1.05;
       if (MDELAY[i] + MDUR[i] > MMAX) MMAX = MDELAY[i] + MDUR[i];
@@ -462,6 +504,30 @@ export function mountParticleField(
     const bufB = new Int32Array(N);
     const counts = new Int32Array(NB * NP + 1);
     const order = new Int32Array(N);
+    /* Which grains landed on the canvas this frame, and how many. A third of
+       the dispersed cloud sits outside the viewport — the field is a third
+       wider than the screen on each axis by design — and a grain nobody can
+       see still cost a bucket, a sort slot and a fillRect. */
+    const live = new Int32Array(N);
+
+    /* ---- loop state ----
+       Up here rather than beside the frame, because resize() runs before any
+       of that exists and now has to ask for a repaint of its own. */
+
+    /* Whether the loop is meant to be going, tracked outright rather than
+       inferred from rafId.
+
+       Inferring is what broke it: requestAnimationFrame in a hidden tab
+       hands back a perfectly good id for a callback that never runs. Start
+       the field on a page that opens in the background and rafId is
+       non-zero while nothing is being drawn — so the "resume if there is no
+       frame pending" test on the way back said one was pending, skipped the
+       restart, and the field stayed frozen for the rest of the session. */
+    let running = false;
+    /* A single frame asked for by something that is not the loop. */
+    let repaintId = 0;
+    let announced = false;
+    let gathered = false;
 
     let W = 0, H = 0, DPR = 1, SCALE = 1, PW = 0, PH_ = 0, fresh = true;
     let FIELD_X = 600, FIELD_Y = 380;
@@ -474,12 +540,29 @@ export function mountParticleField(
     function resize() {
       const cw = canvas.clientWidth || window.innerWidth;
       const ch = canvas.clientHeight || window.innerHeight;
+      /* A canvas that has not been laid out yet measures nothing, and so
+         does the window behind it — a tab restored into the background, a
+         browser view that is not on screen, an ancestor still display:none,
+         a prerender. Sizing the backing store to that is what made the
+         field invisible in those places: the canvas ends up 0x0, and the
+         only thing that ever puts a size back is the observer below.
+
+         So leave every buffer alone and wait to be called again, rather
+         than throwing the field away to record a measurement that is not
+         one. */
+      if (cw <= 0 || ch <= 0) return;
       /* iOS grows and shrinks the viewport as its address bar hides, which
          fires a resize on every scroll. Reseeding the sky and hard-clearing
          on each one tears the trail apart the whole way down the page, so a
          height-only change keeps the buffers it already has. */
       const widthChanged = cw !== W;
       DPR = Math.min(window.devicePixelRatio || 1, 2);
+      /* The screen's ratio is the ceiling, not the answer: past the budget
+         the store is scaled back down towards one device pixel per CSS
+         pixel. Never below it — the grains are single pixels and a store
+         smaller than the element is visibly soft. */
+      const budget = Math.sqrt(PIXEL_BUDGET / (cw * ch));
+      if (budget < DPR) DPR = Math.max(1, budget);
       W = cw;
       H = ch;
       PW = Math.round(W * DPR);
@@ -495,11 +578,39 @@ export function mountParticleField(
       FIELD_Y = (PH_ / 2 / SCALE) * 1.3;
       fresh = true;
       if (widthChanged || SN === 0) seedStars(PW, PH_);
+      /* And something has to paint that ground back on. The loop does it on
+         its next frame, but with motion reduced there is no loop — the
+         field is one still frame, and clearing it without asking for
+         another left a black screen for good. */
+      repaint();
     }
+
+    /* One frame, when the loop is not going to provide it. Nothing to do
+       while it is: the next frame is already coming. */
+    function repaint() {
+      if (running || destroyed || repaintId) return;
+      repaintId = requestAnimationFrame((t) => {
+        repaintId = 0;
+        frame(t);
+      });
+    }
+    teardown.push(() => {
+      if (repaintId) cancelAnimationFrame(repaintId);
+      repaintId = 0;
+    });
+
     resize();
 
     let resizeTimer = 0;
     const onResize = () => {
+      /* The debounce is for iOS's address bar, which fires a resize on
+         every scroll. The first real measurement is not that, and a field
+         that has no size yet should not sit blank through a wait meant for
+         something else. */
+      if (!PW) {
+        resize();
+        return;
+      }
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(resize, 120);
     };
@@ -534,11 +645,8 @@ export function mountParticleField(
     teardown.push(() => window.removeEventListener("pointermove", onPointerMove));
 
     /* ---- 8. Transitions ----
-       One curve for every transition: leaves at full speed, decelerates the
-       whole way in, lands exactly on the target. Nothing overshoots — the
-       variety comes from per-grain flight times, not from the curve. */
-    const EASE_K = 8.5, EASE_N = 1 / (1 - Math.pow(2, -EASE_K));
-    const easeOut = (x: number) => (1 - Math.pow(2, -EASE_K * x)) * EASE_N;
+       The curve itself is easeOut, up with the other tables — it is the
+       same one for every field and it costs a Math.pow to evaluate. */
 
     function progress(j: number, mode: number, tp: number) {
       const pr = mode ? (tp - DELAY[j]) / DUR[j] : (tp - DELAYB[j]) / DURB[j];
@@ -643,7 +751,7 @@ export function mountParticleField(
       for (let i = 0; i < SN; i++) {
         const a = REDUCED
           ? sba[i] + sam[i] * 0.5
-          : sba[i] + sam[i] * (0.5 + 0.5 * Math.sin(clock * ssp[i] + sph[i]));
+          : sba[i] + sam[i] * (0.5 + 0.5 * fsin(clock * ssp[i] + sph[i]));
         if (a <= 0.02) continue;
         const pk = sdep[i] * DPR;
         const sxp = stx[i] + lagX * SKY_PAR_X * pk;
@@ -664,6 +772,19 @@ export function mountParticleField(
       const TO = shapes[shapeTo], morphing = mPhase < MMAX;
       const tx_ = TO.x, ty_ = TO.y, tz_ = TO.z, ts_ = TO.s;
 
+      /* Once the last grain has landed there is nothing left to ease:
+         every E0 has reached MODE and the per-grain curve is the same
+         constant for all of them. Reading it as one saves two array loads,
+         a divide and a table lookup on every grain of every frame the field
+         is simply sitting where it was put — which is most of them. */
+      const settling = tPhase < (MODE ? GMAX : BMAX);
+      const PD = MODE ? DELAY : DELAYB, PU = MODE ? DUR : DURB;
+
+      /* A grain is drawn at most a few pixels wide, so anything this far
+         outside the canvas cannot put ink on it. */
+      const EDGE = 8 * DPR;
+      let vis = 0;
+
       for (let j = 0; j < N; j++) {
         /* where the mark is: somewhere between the shape it left and the one
            it is heading for. Once the morph has finished the target is read
@@ -681,7 +802,13 @@ export function mountParticleField(
           gx = tx_[j]; gy = ty_[j]; gz = tz_[j]; gs = ts_[j];
         }
 
-        const e = REDUCED ? 1 : E0[j] + (MODE - E0[j]) * progress(j, MODE, tPhase);
+        let e: number;
+        if (REDUCED || !settling) {
+          e = REDUCED ? 1 : MODE;
+        } else {
+          const pr = (tPhase - PD[j]) / PU[j];
+          e = E0[j] + (MODE - E0[j]) * (pr <= 0 ? 0 : pr >= 1 ? 1 : easeOut(pr));
+        }
 
         /* the pose belongs to the mark; a loose grain never feels the tilt */
         const mxr = m0 * gx + m1 * gy + m2 * gz;
@@ -695,9 +822,9 @@ export function mountParticleField(
 
         if (!REDUCED) {
           const w = FAMP[j] * (1 - e) + AMP[j] * e, t1 = clock * FRQ[j];
-          rx += Math.sin(t1 + PH[j]) * w;
-          ry += Math.sin(t1 * 1.37 + PH2[j]) * w * 0.85;
-          dz += Math.sin(t1 * 0.71 + PH[j] + PH2[j]) * w * 1.25;
+          rx += fsin(t1 + PH[j]) * w;
+          ry += fsin(t1 * 1.37 + PH2[j]) * w * 0.85;
+          dz += fsin(t1 * 0.71 + PH[j] + PH2[j]) * w * 1.25;
         }
 
         let denom = FOCAL + dz;
@@ -705,8 +832,12 @@ export function mountParticleField(
         let persp = FOCAL / denom;
         if (persp > 2.6) persp = 2.6;
 
-        bufX[j] = cx + rx * SCALE * persp;
-        bufY[j] = cy + ry * SCALE * persp;
+        const px = cx + rx * SCALE * persp;
+        const py = cy + ry * SCALE * persp;
+        /* Off the canvas: no bucket, no sort slot, no fillRect. */
+        if (px < -EDGE || px > PW + EDGE || py < -EDGE || py > PH_ + EDGE) continue;
+        bufX[j] = px;
+        bufY[j] = py;
 
         const span = 400 + (72 - 400) * e;
         let depth = (dz + span) / (span + span);
@@ -718,6 +849,7 @@ export function mountParticleField(
         bufB[j] = idx;
         bufS[j] = SIZE[idx] * GRAIN[j] * persp * DPR * (0.78 + 0.22 * e);
         counts[idx]++;
+        live[vis++] = j;
       }
 
       /* Counting sort by depth bucket, so sixteen thousand grains cost 184
@@ -728,10 +860,13 @@ export function mountParticleField(
         counts[k2] = run;
         run += c;
       }
-      for (let m = 0; m < N; m++) order[counts[bufB[m]]++] = m;
+      for (let m = 0; m < vis; m++) {
+        const id = live[m];
+        order[counts[bufB[id]]++] = id;
+      }
 
       let cur = -1;
-      for (let q = 0; q < N; q++) {
+      for (let q = 0; q < vis; q++) {
         const id = order[q], bb = bufB[id];
         if (bb !== cur) {
           cur = bb;
@@ -745,8 +880,13 @@ export function mountParticleField(
       /* The canvas now has something on it. Said once, and from inside the
          frame rather than after mount returns: the shapes are rasterised and
          the icons decoded asynchronously, so mount returns while the canvas
-         is still blank. */
-      if (!announced) {
+         is still blank.
+
+         PW guards against saying it over a canvas that has not been laid
+         out yet — nothing was drawn on that frame, and the opening would
+         have played over an empty screen. Opening's own timer covers the
+         case where a size never arrives. */
+      if (!announced && PW > 0) {
         announced = true;
         onReady?.();
       }
@@ -754,23 +894,15 @@ export function mountParticleField(
       if (running && !destroyed) rafId = requestAnimationFrame(frame);
     }
 
-    let announced = false;
-    let gathered = false;
-
-    /* Whether the loop is meant to be going, tracked outright rather than
-       inferred from rafId.
-
-       Inferring is what broke it: requestAnimationFrame in a hidden tab
-       hands back a perfectly good id for a callback that never runs. Start
-       the field on a page that opens in the background and rafId is
-       non-zero while nothing is being drawn — so the "resume if there is no
-       frame pending" test on the way back said one was pending, skipped the
-       restart, and the field stayed frozen for the rest of the session. */
-    let running = false;
-
     function play() {
       if (running || destroyed || REDUCED) return;
       running = true;
+      /* A frame a resize asked for is about to be superseded by the loop's
+         own; leaving it queued only lays a second veil on the same tick. */
+      if (repaintId) {
+        cancelAnimationFrame(repaintId);
+        repaintId = 0;
+      }
       /* Without this the first dt after a pause is however long the tab was
          away, and every grain jumps. The clamp inside frame() softens that,
          but only after it has already happened. */
@@ -788,7 +920,7 @@ export function mountParticleField(
 
     if (REDUCED) {
       /* One still frame, no loop. */
-      rafId = requestAnimationFrame(frame);
+      repaint();
     } else {
       /* Always started, even where document.hidden says the tab is in the
          background. A hidden tab simply gets no callbacks until it is
@@ -808,12 +940,11 @@ export function mountParticleField(
     teardown.push(() => document.removeEventListener("visibilitychange", onVisibility));
 
     /* With motion reduced there is no loop, so a resize is the only thing
-       that can ask for a repaint. */
-    if (REDUCED) {
-      const onReducedResize = () => requestAnimationFrame(frame);
-      window.addEventListener("resize", onReducedResize);
-      teardown.push(() => window.removeEventListener("resize", onReducedResize));
-    }
+       that can ask for a repaint — and resize() now does, from the observer
+       above. A window listener here used to be that route, and it did not
+       work: it painted immediately while the buffers were resized 120ms
+       later on the debounce, so the frame it drew was the one the resize
+       then cleared. */
   }
 
   return {

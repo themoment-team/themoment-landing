@@ -238,12 +238,11 @@ section {
 }
 
 /* ---------- swapping parts ----------
-   The chips are remounted when the tab changes, so this plays on arrival.
-   Staggered by a hand from the component, and capped there so a part with
+   The tiles are remounted when the tab changes, so this plays on arrival.
+   Staggered by a hand from the roster, and capped there so a part with
    fifteen people does not take half a second longer to finish than one with
    two. There is no matching exit: the outgoing set is gone before this
-   starts, which is what a crossfade of two absolutely-positioned grids would
-   cost several times over in complexity. */
+   starts. */
 
 @keyframes memberIn {
   from {
@@ -263,6 +262,109 @@ section {
 @media (prefers-reduced-motion: reduce) {
   .member-in {
     animation: none;
+  }
+}
+
+/* ---------- the part rails ----------
+   One line of members for the part the tabs have selected, scrolling
+   sideways. Everything here is the
+   part Tailwind has no utility for, or has one that reads worse than the
+   declaration — see widgets/team/ui/MemberRail for the rest.
+
+   The scrollbar is hidden rather than styled. The rail is one row of tiles
+   with a fade at each end saying there is more, and a horizontal bar under
+   every one of four rails is four bars of chrome saying the same thing
+   louder. */
+
+.member-rail {
+  overflow-x: auto;
+  /* A sideways swipe that reaches the end of the rail must not carry on into
+     the browser's back gesture. */
+  overscroll-behavior-x: contain;
+  /* proximity, not mandatory: on a rail of fifteen, mandatory grabs the row
+     at every gap and the whole thing feels sticky. */
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.member-rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* The fade is only drawn on a rail that has somewhere to go, and only on the
+   side it can still go. One mask on the scroller — not one per tile, which
+   would be thirty-three composited layers to draw two soft edges. */
+.member-rail[data-overflow="true"] {
+  --fade-l: 40px;
+  --fade-r: 40px;
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)),
+    transparent 100%
+  );
+}
+
+.member-rail[data-start="true"] {
+  --fade-l: 0px;
+}
+
+.member-rail[data-end="true"] {
+  --fade-r: 0px;
+}
+
+/* The arrows are a mouse convenience. A touch device scrolls the rail with a
+   finger and has no pointer to put on them, so they are not drawn at all
+   rather than drawn and left inert. */
+.member-rail-nav {
+  display: none;
+}
+
+/* A link needs to say where it goes before it is followed. On a phone one
+   instruction sits after the rail, aligned with the edge it scrolls toward.
+   A wide screen with a precise pointer gets the quieter version inside the
+   card: its space is held so the card does not grow under the pointer, while
+   the line itself rises into view with the border change. */
+.member-github-hover,
+.member-github-empty {
+  display: none;
+}
+
+@media (min-width: 640px) and (hover: hover) and (pointer: fine) {
+  .member-rail-nav {
+    display: flex;
+  }
+
+  .member-rail-github-hint {
+    display: none;
+  }
+
+  .member-github-hover {
+    display: flex;
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 300ms ease-out,
+      transform 300ms ease-out;
+  }
+
+  .member-github-empty {
+    display: block;
+  }
+
+  .member-tile:hover .member-github-hover,
+  .member-tile:focus-visible .member-github-hover {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-github-hover {
+    transform: none;
+    transition: none;
   }
 }
 
