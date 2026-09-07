@@ -31,8 +31,8 @@ export default function TeamSection({ members }: { members: TeamMember[] }) {
           Member
         </Reveal>
         <Reveal as="p" delay={BEAT} className="mt-stack text-center text-body font-medium text-white">
-          <span className="text-accent">더모먼트</span>에서 순간을 혁신하고 있는
-          광주소프트웨어마이스터고 각 분야, 각 기수의 최고 인재들은 누굴까요
+          광주소프트웨어마이스터고 각 분야, 각 기수의 최고 인재들이{' '}
+          <span className="text-accent">더모먼트</span>에서 순간을 혁신하고 있습니다
         </Reveal>
 
         <div className="mt-block flex w-full flex-col items-center">
