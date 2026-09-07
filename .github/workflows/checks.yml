@@ -1,0 +1,56 @@
+# What a pull request is actually checked by.
+#
+# Until this file there was nothing. The green tick on a PR came from Vercel,
+# and neither half of it was a check on the code: "Vercel Preview Comments"
+# reports whether anyone has left unresolved feedback on the preview, and the
+# preview deployment itself only says the build did not fall over. Nothing
+# ran the type checker or the linter, so a PR could carry a type error or a
+# lint failure to a green tick and be merged on it.
+#
+# One job rather than three. Every step here needs the same install, and
+# splitting them would pay for it three times to save nothing — they run in a
+# few seconds each. Separate steps rather than one command, so the log says
+# which of them failed without being read.
+
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A branch that is pushed twice in a minute does not need the first run
+# finished. main is excluded: its runs are the record of what was merged.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 24 is what the project is developed and built on. Vercel builds the
+      # preview on whatever its own project setting says, so if that is moved
+      # this wants moving with it — CI passing on a version the deploy does
+      # not use is worth less than it looks.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # ci rather than install: it installs the lockfile exactly and fails if
+      # package.json and the lock have drifted, which is a thing worth being
+      # told about here rather than discovering on a deploy.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      # The Notion credentials are deliberately absent. Without them the
+      # roster falls back to the copy in model/roster.ts and the build says
+      # so and carries on, so this checks the page compiles without reaching
+      # for a secret a fork would not have.
+      - run: npm run build
