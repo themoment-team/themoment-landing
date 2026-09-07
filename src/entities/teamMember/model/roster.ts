@@ -55,7 +55,7 @@ const ROWS: Row[] = [
   ["정연돈", 9, "Frontend", "yeondon125"],
   ["김유찬", 9, "Design", "KIEYU5"],
 
-  ["김대은", 10, "Server", "s26006-sys"],
+  ["김대은", 10, "Server", "dx2eun"],
   ["김영원", 10, "Server", "kim-kiwi"],
   ["한승헌", 10, "Server", "s26071-seungheon"],
   ["강동혁", 10, "Frontend", "lililililill2"],
@@ -63,10 +63,10 @@ const ROWS: Row[] = [
 ];
 
 export const ROSTER: TeamMember[] = ROWS.map(([name, generation, role, githubId], i) => ({
-  /* Every one of them has a GitHub account, so the handle is both unique and
-     stable — which is what a React key wants, and two members could share a
-     name. */
-  id: githubId,
+  /* The handle is unique and stable, which is what a React key wants, and
+     two members could share a name. Everyone on the list today has one; the
+     name and year are there for whoever is added without. */
+  id: githubId || `${name}-${generation}`,
   name,
   githubId,
   role,
@@ -75,10 +75,18 @@ export const ROSTER: TeamMember[] = ROWS.map(([name, generation, role, githubId]
   status: "",
   tagline: "",
   /* github.com/{handle}.png redirects to the account's picture, and GitHub
-     draws an identicon for accounts that never uploaded one — so this is
-     only ever empty if the handle is wrong, and the card falls back to
-     initials when the request 404s. */
-  avatarUrl: `https://github.com/${githubId}.png`,
-  link: `https://github.com/${githubId}`,
+     draws an identicon for accounts that never uploaded one, so a live
+     handle always resolves to something. A renamed or deleted one 404s, and
+     the tile draws its initials underneath the portrait rather than instead
+     of it, so that is what is left showing.
+
+     Both are conditional for the same reason the Notion reader makes them
+     conditional: with no handle the unguarded template produced
+     "https://github.com/.png" and a link to GitHub's front page — a portrait
+     that could only fail, and a link that went somewhere wrong. The type
+     says empty, and empty is what the tile reads to decide it is not a
+     link at all. */
+  avatarUrl: githubId ? `https://github.com/${githubId}.png` : "",
+  link: githubId ? `https://github.com/${githubId}` : "",
   order: i,
 }));
