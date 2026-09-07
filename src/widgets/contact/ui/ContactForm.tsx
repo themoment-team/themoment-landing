@@ -39,7 +39,7 @@ type FieldKey = (typeof FIELDS)[number]["key"];
 const EMPTY: Record<FieldKey, string> = { name: "", email: "", message: "" };
 
 const fieldClass =
-  "w-full border border-line bg-glass px-3 py-3 text-field font-medium text-white " +
+  "w-full border border-line bg-glass px-3 py-3 text-label font-medium text-white " +
   "outline-none transition-colors duration-500 ease-out " +
   "placeholder:text-muted hover:border-line-strong " +
   "focus:border-accent focus:bg-glass-lit";

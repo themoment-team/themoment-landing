@@ -23,11 +23,7 @@ export default function ContactSection() {
         <Reveal as="h2" className="text-display font-bold text-white">
           Contact
         </Reveal>
-        <Reveal
-          as="p"
-          delay={BEAT}
-          className="mx-auto mt-stack max-w-measure text-left text-body font-medium text-white sm:text-center"
-        >
+        <Reveal as="p" delay={BEAT} className="mt-stack text-center text-body font-medium text-white">
           협업, 합류, 의뢰 등 고민할 필요 없습니다
           <br />
           <span className="text-accent">더모먼트</span>는 무엇이든 순간을 혁신합니다

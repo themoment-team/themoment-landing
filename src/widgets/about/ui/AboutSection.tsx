@@ -12,16 +12,7 @@ export default function AboutSection() {
           About
         </Reveal>
 
-        {/* Centred is the comp, and it is right for one or two lines on a
-            wide screen. On a phone the same paragraph is three or four, and
-            a centred block that long gives the eye a different starting
-            point on every line — so it is centred only from sm up. The
-            measure keeps it from running the whole width of a laptop. */}
-        <Reveal
-          as="p"
-          delay={BEAT}
-          className="mx-auto mt-stack max-w-measure text-left text-body font-medium text-white sm:text-center"
-        >
+        <Reveal as="p" delay={BEAT} className="mt-stack text-body font-medium text-white">
           <span className="text-accent">더모먼트</span>는 광주소프트웨어마이스터고의 전공동아리입니다.
           {/* The comp breaks here and the break is the design — one clause a
               line. A soft break rather than two paragraphs, so a narrow
