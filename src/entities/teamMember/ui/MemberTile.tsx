@@ -16,9 +16,9 @@ function hueOf(seed: string): number {
 /* One member, as the comp draws them at node 141:4: a hairline rectangle
    holding a round avatar, the name under it, and the generation under that.
    It stays at the comp's 136px on a phone, where two tiles should still be
-   legible in the rail at once. From sm up it grows to 160px: that is where
-   the section has the room for a larger portrait without trading away the
-   sense that the row continues.
+   legible in the rail at once. From sm up it grows to 160px, then to 192px
+   on a full desktop viewport: that is where the section has the room for a
+   larger portrait without trading away the sense that the row continues.
 
    The comp's border is solid #fff, which is a dark-background value — right
    here, since the page has no light mode, but it is still louder at 1px than
@@ -37,7 +37,7 @@ export default function MemberTile({
   style?: CSSProperties;
 }) {
   const shell =
-    "member-tile flex w-[136px] snap-start flex-col items-start gap-4 border border-line p-3 sm:w-[160px] sm:p-4";
+    "member-tile flex w-[136px] snap-start flex-col items-start gap-4 border border-line p-3 sm:w-[160px] sm:p-4 lg:w-[192px] lg:p-5";
 
   const body = (
     <>
