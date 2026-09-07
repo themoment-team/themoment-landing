@@ -24,9 +24,9 @@ export default function ContactSection() {
           Contact
         </Reveal>
         <Reveal as="p" delay={BEAT} className="mt-stack text-center text-body font-medium text-white">
-          협업, 합류, 의뢰 등 무엇이던지 고민하지 마세요
+          협업, 합류, 의뢰 등 고민할 필요 없습니다
           <br />
-          <span className="text-accent">더모먼트</span>와 함께 순간을 혁신하세요
+          <span className="text-accent">더모먼트</span>는 무엇이든 순간을 혁신합니다
         </Reveal>
 
         <ContactForm accessKey={accessKey} />
