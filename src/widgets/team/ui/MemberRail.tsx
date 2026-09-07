@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-/* Tile 136 plus the 12 between them. Three at a time is a press that moves
+/* Tile 160 plus the 12 between them. Three at a time is a press that moves
    the rail visibly without throwing away where the reader was. */
-const STRIDE = 148 * 3;
+const STRIDE = 172 * 3;
 
 interface RailState {
   overflow: boolean;

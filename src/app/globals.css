@@ -322,9 +322,48 @@ section {
   display: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
+/* A link needs to say where it goes before it is followed. Touch screens
+   have no hover, so their instruction is always present under the member's
+   generation. A precise pointer gets the quieter version: its space is held
+   so the card does not grow under the pointer, while the line itself rises
+   into view with the border change. */
+.member-github-touch {
+  display: block;
+}
+
+.member-github-hover {
+  display: none;
+}
+
+@media (min-width: 640px) and (hover: hover) and (pointer: fine) {
   .member-rail-nav {
     display: flex;
+  }
+
+  .member-github-touch {
+    display: none;
+  }
+
+  .member-github-hover {
+    display: flex;
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 300ms ease-out,
+      transform 300ms ease-out;
+  }
+
+  .member-tile:hover .member-github-hover,
+  .member-tile:focus-visible .member-github-hover {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-github-hover {
+    transform: none;
+    transition: none;
   }
 }
 
