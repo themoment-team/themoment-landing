@@ -1,42 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import MemberCard, { CHIP_SHELL } from "@/entities/teamMember/ui/MemberCard";
-import type { TeamMember } from "@/entities/teamMember/model/types";
+import type { PartGroup } from "@/entities/teamMember/model/parts";
+import MemberTile from "@/entities/teamMember/ui/MemberTile";
 import Reveal from "@/shared/ui/Reveal";
 import { GROUP, beat } from "@/shared/lib/timing";
-
-/* The parts, in the order the comp lists them. A part that turns up in the
-   data but not here is appended rather than dropped: a role spelled some
-   other way in Notion should cost the team a tidy tab order, not a member. */
-const PART_ORDER = ["Frontend", "Server", "Design", "DevOps"];
-
-function partsIn(members: TeamMember[]): string[] {
-  const present = new Set(members.map((m) => m.role).filter(Boolean));
-  const known = PART_ORDER.filter((part) => present.has(part));
-  const rest = [...present].filter((part) => !PART_ORDER.includes(part)).sort();
-  return [...known, ...rest];
-}
+import MemberRail from "./MemberRail";
 
 /* One part at a time, chosen from the row of tabs above — the comp's own
-   structure. The generation rides on each chip instead, which is what lets
-   the list be cut by part and still say which year someone is from. */
-export default function MemberRoster({ members }: { members: TeamMember[] }) {
-  const parts = partsIn(members);
-  const [active, setActive] = useState(parts[0] ?? "");
-  const shown = members.filter((member) => member.role === active);
+   structure. The generation rides on each tile instead, which is what lets
+   the list be cut by part and still say which year someone is from.
 
-  /* Server has fifteen people and Design has two. Left to itself the grid
-     would be three rows deep on one tab and one row on another, and the
-     section — and everything below it — would jump by two rows every time
-     someone pressed a tab. So every tab lays out the same number of cells
-     and the extras are simply empty. Counted from the data rather than
-     written down, so it stays true as the team changes. */
-  const slots = parts.reduce(
-    (most, part) => Math.max(most, members.filter((m) => m.role === part).length),
-    0,
-  );
-  const blanks = Math.max(0, slots - shown.length);
+   The chosen part is one line that scrolls sideways rather than a grid that
+   wraps. Which is also what retires the empty cells this used to carry:
+   fifteen people wrapped to three rows and two to one, so every tab had to
+   lay out the same number of cells and leave the extras blank or the section
+   would jump two rows deep on every press. A rail is one row whatever is in
+   it. */
+export default function MemberRoster({ groups }: { groups: PartGroup[] }) {
+  const [active, setActive] = useState(groups[0]?.part ?? "");
+  const shown = groups.find((group) => group.part === active) ?? groups[0];
 
   /* The underline is one bar that moves, not a border that switches on and
      off under whichever tab is current. */
@@ -77,6 +60,8 @@ export default function MemberRoster({ members }: { members: TeamMember[] }) {
     };
   }, [active]);
 
+  if (!shown) return null;
+
   return (
     <>
       <Reveal delay={GROUP} className="w-full">
@@ -87,20 +72,20 @@ export default function MemberRoster({ members }: { members: TeamMember[] }) {
           ref={tabsRef}
           className="relative flex flex-wrap items-center justify-center gap-x-8 gap-y-2 sm:gap-x-12"
         >
-          {parts.map((part) => {
-            const isActive = part === active;
+          {groups.map((group) => {
+            const isActive = group.part === active;
             return (
-              <li key={part}>
+              <li key={group.part}>
                 <button
                   type="button"
-                  data-part={part}
-                  onClick={() => setActive(part)}
+                  data-part={group.part}
+                  onClick={() => setActive(group.part)}
                   aria-pressed={isActive}
                   className={`px-1 py-2 text-tab transition-colors duration-300 ease-out focus-visible:text-white focus-visible:outline-none ${
                     isActive ? "text-white" : "text-muted hover:text-white"
                   }`}
                 >
-                  {part}
+                  {group.part}
                 </button>
               </li>
             );
@@ -120,40 +105,27 @@ export default function MemberRoster({ members }: { members: TeamMember[] }) {
         </ul>
       </Reveal>
 
-      {/* One Reveal for the whole grid rather than one per chip: the Reveal
+      {/* One Reveal for the whole rail rather than one per tile: the Reveal
           is the section's own entrance and fires once, and the swap between
           parts is a different animation with a different job. */}
       <Reveal delay={beat(1, GROUP)} className="mt-block w-full">
-        {/* Keyed on the part, so React replaces the chips rather than
-            re-labelling them in place — which is what gives every one of
-            them a mount to animate on.
-
-            The chips keep their own height — a chip is a name in a box and
-            stretching it to fill a row turned it into a placard. The section
-            is filled by the space between them instead, which is why the row
-            gap is so much larger than the column gap. */}
-        <ul
-          key={active}
-          className="grid grid-cols-2 gap-x-5 gap-y-20 sm:grid-cols-3 lg:grid-cols-5"
-        >
-          {shown.map((member, i) => (
-            <li
+        {/* Keyed on the part, so React replaces the rail rather than
+            re-labelling the tiles in place. Which gives every tile a mount
+            to animate on, and gives the rail a fresh measurement and a
+            scroll position back at the start for the part just chosen. */}
+        <MemberRail key={active} label={`${shown.part} 멤버 ${shown.members.length}명`}>
+          {shown.members.map((member, i) => (
+            <MemberTile
               key={member.id}
+              member={member}
               className="member-in"
               /* Capped: a stagger that ran the full length of Server's
                  fifteen would take half a second longer to settle than
                  Design's two, and the tabs would feel unevenly weighted. */
               style={{ animationDelay: `${Math.min(i, 9) * 35}ms` }}
-            >
-              <MemberCard member={member} />
-            </li>
+            />
           ))}
-          {Array.from({ length: blanks }, (_, i) => (
-            <li key={`slot-${i}`} aria-hidden className="invisible">
-              <div className={CHIP_SHELL}>&nbsp;</div>
-            </li>
-          ))}
-        </ul>
+        </MemberRail>
       </Reveal>
     </>
   );
