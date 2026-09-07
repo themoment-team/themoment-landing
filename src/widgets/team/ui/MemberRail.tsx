@@ -43,9 +43,12 @@ export default function MemberRail({ label, children }: { label: string; childre
     const el = scroller.current;
     if (!el) return;
 
+    let frame = 0;
+
     const measure = () => {
+      frame = 0;
       const max = el.scrollWidth - el.clientWidth;
-      setRail({
+      const next: RailState = {
         /* A pixel of slack: sub-pixel layout leaves scrollWidth a hair over
            clientWidth on rows that do not actually overflow. */
         overflow: max > 1,
@@ -58,11 +61,33 @@ export default function MemberRail({ label, children }: { label: string; childre
            with its track. */
         ratio: el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1,
         offset: el.scrollWidth > 0 ? el.scrollLeft / el.scrollWidth : 0,
-      });
+      };
+      /* Handing back the state that is already there is how React is told
+         there is nothing to do. A fresh object every time is not: a rail
+         that has been scrolled to its end and is being pushed against, or
+         an observer firing on a layout that did not move, would re-render
+         the whole row for a set of identical numbers. */
+      setRail((prev) =>
+        prev.overflow === next.overflow &&
+        prev.start === next.start &&
+        prev.end === next.end &&
+        prev.ratio === next.ratio &&
+        prev.offset === next.offset
+          ? prev
+          : next,
+      );
+    };
+
+    /* Scroll events arrive faster than the screen is redrawn — a trackpad
+       flick on a fifteen-person rail fires several per frame, and each one
+       was a measurement and a render for a gauge that is only ever seen
+       once per frame. */
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
     };
 
     measure();
-    el.addEventListener("scroll", measure, { passive: true });
+    el.addEventListener("scroll", schedule, { passive: true });
 
     /* Two things are watched, and they answer different questions.
 
@@ -74,12 +99,13 @@ export default function MemberRail({ label, children }: { label: string; childre
        it does not overflow while it is still laid out in the fallback font.
        The tab underline on this same section was already caught by exactly
        that. */
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(schedule);
     observer.observe(el);
     if (track.current) observer.observe(track.current);
 
     return () => {
-      el.removeEventListener("scroll", measure);
+      if (frame) cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", schedule);
       observer.disconnect();
     };
   }, []);
