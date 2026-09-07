@@ -1,5 +1,5 @@
-import { getTeamMembers } from "@/entities/teamMember/api/getTeamMembers";
 import { groupByPart } from "@/entities/teamMember/model/parts";
+import type { TeamMember } from "@/entities/teamMember/model/types";
 import Reveal from "@/shared/ui/Reveal";
 import RevealGroup from "@/shared/ui/RevealGroup";
 import { BEAT, GROUP } from "@/shared/lib/timing";
@@ -16,8 +16,7 @@ import MemberRoster from "./MemberRoster";
    scroll on the two long ones. The generation stays on the tile, under the
    name, which is what lets the cut be by part and still say which year
    someone is from. */
-export default async function TeamSection() {
-  const members = await getTeamMembers();
+export default function TeamSection({ members }: { members: TeamMember[] }) {
   const parts = groupByPart(members);
 
   return (

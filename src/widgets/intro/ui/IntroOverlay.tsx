@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { INTRO } from '@/shared/lib/timing';
 import styles from './IntroOverlay.module.css';
 
@@ -27,6 +27,12 @@ const WORDMARK = 'the_moment';
 
 export default function IntroOverlay({ start }: { start: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  /* Once JavaScript is alive it owns the release: keep the cover fully black
+     until Opening confirms that the page images have decoded. The stylesheet
+     still has a short no-JavaScript escape hatch before this class appears. */
+  useEffect(() => setHydrated(true), []);
 
   useEffect(() => {
     const el = ref.current;
@@ -101,11 +107,13 @@ export default function IntroOverlay({ start }: { start: boolean }) {
   }, [start]);
 
   return (
-    // .run ships in the server markup, so the opening starts on the first
-    // paint instead of waiting for hydration
+    // The server starts in the black holding state. Hydration keeps that
+    // state fixed until Opening has finished preparing the images.
     <div
       ref={ref}
-      className={`${styles.intro} ${start ? styles.run : styles.holding}`}
+      className={`${styles.intro} ${start ? styles.run : styles.holding} ${
+        hydrated && !start ? styles.waiting : ""
+      }`}
       aria-hidden="true"
     >
       <div className={styles.veil} />

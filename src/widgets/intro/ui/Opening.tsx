@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ParticleField from "@/shared/ui/ParticleField";
+import { preloadImages } from "@/shared/lib/preloadImages";
 import { INTRO } from "@/shared/lib/timing";
 import IntroOverlay from "./IntroOverlay";
 
@@ -19,22 +20,37 @@ import IntroOverlay from "./IntroOverlay";
    a tab opened in the background gets no animation frames, so the field can
    be perfectly healthy and still silent. Better a beat early over a canvas
    that is nearly ready than a page that never lifts. */
-const WAIT_CAP = 2000;
+const FIELD_WAIT_CAP = 2000;
 
 /* The same for the gather: the field is told to assemble at INTRO.ends and
    the last grain lands about a second and a half later, so this is that plus
    room for a slow start. */
 const GATHER_CAP = INTRO.ends + 2500;
 
-export default function Opening() {
+export default function Opening({ imageSources }: { imageSources: string[] }) {
+  const [imagesReady, setImagesReady] = useState(false);
   const [started, setStarted] = useState(false);
   const [assembled, setAssembled] = useState(false);
 
+  /* All visible images and the avatars behind inactive member tabs are
+     fetched and decoded while the solid-black cover is fixed in place. */
   useEffect(() => {
-    if (started) return;
-    const cap = window.setTimeout(() => setStarted(true), WAIT_CAP);
+    let cancelled = false;
+
+    void preloadImages(imageSources).then(() => {
+      if (!cancelled) setImagesReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageSources]);
+
+  useEffect(() => {
+    if (!imagesReady || started) return;
+    const cap = window.setTimeout(() => setStarted(true), FIELD_WAIT_CAP);
     return () => window.clearTimeout(cap);
-  }, [started]);
+  }, [imagesReady, started]);
 
   /* The navigation and the scroll cue wait for the grains to finish
      assembling into the mark — the field says when, rather than a timer
@@ -53,21 +69,23 @@ export default function Opening() {
   }, [assembled]);
 
   /* And the same kind of backstop as above, for the same reason: no frames,
-     no report. Measured from mount, so it covers the gather being asked for
-     late as well as never finishing. */
+     no report. It starts with the intro, so time spent preloading does not
+     make the navigation appear before the particles have assembled. */
   useEffect(() => {
-    if (assembled) return;
+    if (!started || assembled) return;
     const cap = window.setTimeout(() => setAssembled(true), GATHER_CAP);
     return () => window.clearTimeout(cap);
-  }, [assembled]);
+  }, [assembled, started]);
 
   return (
     <>
-      <ParticleField
-        openDelay={INTRO.ends}
-        onReady={() => setStarted(true)}
-        onGathered={() => setAssembled(true)}
-      />
+      {imagesReady ? (
+        <ParticleField
+          openDelay={INTRO.ends}
+          onReady={() => setStarted(true)}
+          onGathered={() => setAssembled(true)}
+        />
+      ) : null}
       <IntroOverlay start={started} />
     </>
   );

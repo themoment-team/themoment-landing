@@ -1,4 +1,5 @@
 import Opening from "@/widgets/intro/ui/Opening";
+import { getTeamMembers } from "@/entities/teamMember/api/getTeamMembers";
 import HeroSection from "@/widgets/hero/ui/HeroSection";
 import AboutSection from "@/widgets/about/ui/AboutSection";
 import ValuesSection from "@/widgets/values/ui/ValuesSection";
@@ -26,17 +27,23 @@ import Footer from "@/widgets/footer/ui/Footer";
    otherwise replay it. It sits outside <main> because it is a cover over
    the page, not part of the document's content, and it carries the site's
    top logo once it has docked. */
-export default function LandingPage() {
+export default async function LandingPage() {
+  /* Read the roster once and hand the same result to both consumers. The
+     intro needs every avatar URL, including members behind inactive tabs,
+     while the team section needs the member records themselves. */
+  const members = await getTeamMembers();
+  const memberImages = members.map((member) => member.avatarUrl).filter(Boolean);
+
   return (
     <>
       {/* The field behind the page and the cover over it, and the timing that
           binds them: black until the field has painted, then the opening. */}
-      <Opening />
+      <Opening imageSources={memberImages} />
       <main className="flex w-full flex-col items-stretch">
         <HeroSection />
         <AboutSection />
         <ValuesSection />
-        <TeamSection />
+        <TeamSection members={members} />
         <WorkSection />
         <ContactSection />
       </main>

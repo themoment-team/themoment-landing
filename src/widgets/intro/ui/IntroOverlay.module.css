@@ -9,10 +9,9 @@
    "covered" — any one of those failures would leave the landing a black
    rectangle for good.
 
-   `.run` ships in the server markup, so the animation starts on the first
-   paint rather than after hydration. Adding it from an effect shows the
-   finished logo for a frame and then restarts it, which is very visible
-   under SSR.
+   The server ships the black holding state. Once hydration has taken over,
+   `.waiting` keeps it fixed until the page images are ready; only then does
+   `.run` begin the animation.
 
    Adapted from the handoff in three places, all noted below: the ground
    colour, the font variable, and the theme switching.
@@ -66,7 +65,7 @@
   }
 }
 
-/* Marks the overlay as one that should play. Carried in the server markup. */
+/* Marks the overlay as one that should play. */
 .run {
   --intro-run: 1;
 }
@@ -78,6 +77,18 @@
   inset: 0;
   opacity: 0;
   background-color: var(--ground);
+}
+
+/* Hydration has completed, so Opening now owns the release of the cover.
+   This overrides the two-second no-JavaScript escape hatch below and keeps
+   the screen completely black while page images are being decoded. */
+.holding.waiting .veil {
+  animation: none;
+  opacity: 1;
+}
+
+.holding.waiting .lockup {
+  opacity: 0;
 }
 
 /* Mark and wordmark together. At rest, already docked. */
