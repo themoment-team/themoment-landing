@@ -551,11 +551,18 @@ export function mountParticleField(
          than throwing the field away to record a measurement that is not
          one. */
       if (cw <= 0 || ch <= 0) return;
-      /* iOS grows and shrinks the viewport as its address bar hides, which
-         fires a resize on every scroll. Reseeding the sky and hard-clearing
-         on each one tears the trail apart the whole way down the page, so a
-         height-only change keeps the buffers it already has. */
-      const widthChanged = cw !== W;
+      /* Nothing to do, and doing it anyway is destructive: assigning to
+         canvas.width throws the backing store away, so a resize that lands
+         on the size we already have wipes the trail and hard-fills the
+         ground black for no reason. iOS is the one that made this matter —
+         its address bar used to resize this canvas on every scroll, and
+         every one of those reached the assignments below. The canvas is
+         sized in lvh now so the bar cannot move it at all, but a no-op
+         resize should be a no-op wherever it comes from.
+
+         Guarding only the reseed, which is what this did, guarded the
+         cheapest part of a resize and none of the destructive one. */
+      if (cw === W && ch === H && PW > 0) return;
       DPR = Math.min(window.devicePixelRatio || 1, 2);
       /* The screen's ratio is the ceiling, not the answer: past the budget
          the store is scaled back down towards one device pixel per CSS
@@ -577,7 +584,12 @@ export function mountParticleField(
       FIELD_X = (PW / 2 / SCALE) * 1.3;
       FIELD_Y = (PH_ / 2 / SCALE) * 1.3;
       fresh = true;
-      if (widthChanged || SN === 0) seedStars(PW, PH_);
+      /* The sky is reseeded for the size it is now — stars laid out for a
+         screen a third shorter leave the bottom of a rotated phone empty.
+         This was gated on the width alone, to keep the address bar from
+         reseeding on every scroll; the bar no longer reaches this function,
+         and a height that really did change needs its own stars. */
+      seedStars(PW, PH_);
       /* And something has to paint that ground back on. The loop does it on
          its next frame, but with motion reduced there is no loop — the
          field is one still frame, and clearing it without asking for
@@ -638,6 +650,13 @@ export function mountParticleField(
     /* On window, not on the canvas: the field sits under the page with
        pointer-events off and never sees an event of its own. */
     const onPointerMove = (e: PointerEvent) => {
+      /* A mouse only. A finger dragging the page fires pointermove for the
+         whole gesture, so on a phone the scroll WAS the parallax: the sky
+         and the dust slid a full swing with the finger, the mark leaned over
+         with it, and all of it stayed where the finger was lifted — touch
+         has no pointerleave to put it back. Nothing hovers on a touchscreen,
+         so the field simply stays centred there. */
+      if (e.pointerType !== "mouse") return;
       ptrTX = e.clientX / W - 0.5;
       ptrTY = e.clientY / H - 0.5;
     };

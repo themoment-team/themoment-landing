@@ -14,6 +14,14 @@ import { mountParticleField, type ParticleField as Field } from "../lib/particle
    dissolving under it. Scrolling back to the top gathers it again. */
 const SCATTER_AT = 0.35;
 
+/* Coming back up, the mark re-gathers lower than it came apart. One line for
+   both directions is a line the page can sit exactly on, and on iOS it does:
+   the address bar retracting as you scroll shortens window.innerHeight by a
+   tenth, which moves the line under a page that has not moved at all. The
+   mark was tearing apart and reassembling — a second and a half of sixteen
+   thousand grains, each way — while the reader held still. */
+const GATHER_AT = 0.2;
+
 /* The page's backdrop. Fixed to the viewport and under everything, so the
    grains keep moving as the page scrolls and their trails are never cut.
 
@@ -69,12 +77,18 @@ export default function ParticleField({
 
   useEffect(() => {
     let raf = 0;
+    /* Which side of the band the page is on, kept rather than recomputed,
+       because with two lines the answer between them is "whatever it was". */
+    let away = window.scrollY > window.innerHeight * SCATTER_AT;
 
     const apply = () => {
       raf = 0;
       const field = fieldRef.current;
       if (!field) return;
-      const away = window.scrollY > window.innerHeight * SCATTER_AT;
+      const y = window.scrollY;
+      const h = window.innerHeight;
+      if (!away && y > h * SCATTER_AT) away = true;
+      else if (away && y < h * GATHER_AT) away = false;
       /* Both are no-ops when the field is already in that state, but asking
          first keeps the intent readable. */
       if (away && field.isGathered()) field.scatter();
@@ -105,7 +119,17 @@ export default function ParticleField({
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
+      /* lvh, not 100% — the large viewport, the one with iOS's address bar
+         retracted. A percentage height tracks the bar as it hides and shows,
+         which resized this canvas on every scroll of every page; the store
+         was rebuilt and cleared each time, and the field flashed. lvh is a
+         constant for the life of the orientation, so the bar moves over the
+         canvas rather than resizing it. It is a full-bleed backdrop at -z-10
+         with nothing to click, so the strip that sits under the bar while
+         the bar is showing costs nothing.
+
+         Same number as 100% on a desktop, where there is no bar. */
+      className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-lvh w-full"
     />
   );
 }
