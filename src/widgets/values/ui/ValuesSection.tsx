@@ -119,14 +119,22 @@ export default function ValuesSection() {
                    frame on that thread, so the sentence on its way out drops
                    its frames and simply vanishes. Promoted, both halves of
                    the crossfade run on the compositor. */
-                className={`col-start-1 row-start-1 transition-opacity duration-500 will-change-[opacity] ${
-                  /* Each half takes the easing that keeps it on screen.
-                     ease-out spends most of its travel in the first moments,
-                     which is right for the sentence arriving and wrong for
-                     the one leaving — under it the outgoing line was below a
-                     tenth of its opacity by the halfway mark and read as a
-                     cut, not a fade. */
-                  i === active ? "opacity-100 ease-out" : "opacity-0 ease-in"
+                className={`col-start-1 row-start-1 transition-opacity ease-out will-change-[opacity] ${
+                  /* The two halves are sequenced, not run together. Both
+                     sentences occupy the same cell, so fading them over each
+                     other for the same half second printed one on top of the
+                     other: at the midpoint they sat at 0.68 apiece and the
+                     ink on the page never dropped below 0.90 of full, which
+                     is two legible sentences at once rather than a fade.
+
+                     So the outgoing line leaves first and the incoming one
+                     starts as it finishes. The cell is briefly empty, which
+                     is the point — it reads as a handoff. Half a second end
+                     to end either way, which is what keeps it in step with
+                     the list below changing colour. */
+                  i === active
+                    ? "opacity-100 delay-[180ms] duration-[320ms]"
+                    : "opacity-0 delay-0 duration-200"
                 }`}
               >
                 {value.line}

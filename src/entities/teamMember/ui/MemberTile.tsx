@@ -16,9 +16,11 @@ function hueOf(seed: string): number {
 /* One member, as the comp draws them at node 141:4: a hairline rectangle
    holding a round avatar, the name under it, and the generation under that.
    It stays at the comp's 136px on a phone, where two tiles should still be
-   legible in the rail at once. From sm up it grows to 160px, then to 192px
+   legible in the rail at once. From sm up it grows to 160px, then to 224px
    on a full desktop viewport: that is where the section has the room for a
-   larger portrait without trading away the sense that the row continues.
+   larger portrait without trading away the sense that the row continues —
+   at 1440 it is still five and a bit tiles across, so the row visibly runs
+   off the edge rather than fitting.
 
    The comp's border is solid #fff, which is a dark-background value — right
    here, since the page has no light mode, but it is still louder at 1px than
@@ -37,7 +39,7 @@ export default function MemberTile({
   style?: CSSProperties;
 }) {
   const shell =
-    "member-tile flex w-[136px] snap-start flex-col items-start gap-4 border border-line p-3 sm:w-[160px] sm:p-4 lg:w-[192px] lg:p-5";
+    "member-tile flex w-[136px] snap-start flex-col items-start gap-4 border border-line p-3 sm:w-[160px] sm:p-4 lg:w-[224px] lg:gap-5 lg:p-6";
 
   const body = (
     <>
@@ -78,7 +80,7 @@ export default function MemberTile({
 
       <span className="flex w-full min-w-0 flex-col gap-1">
         {/* keep-all: Korean breaks between words, not inside them. */}
-        <span className="text-[16px] leading-normal font-semibold break-keep text-white">
+        <span className="text-[16px] leading-normal font-semibold break-keep text-white lg:text-[18px]">
           {member.name}
         </span>
         {member.generationLabel ? (
