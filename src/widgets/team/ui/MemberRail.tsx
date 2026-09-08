@@ -2,9 +2,16 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-/* Tile 160 plus the 12 between them. Three at a time is a press that moves
-   the rail visibly without throwing away where the reader was. */
-const STRIDE = 172 * 3;
+/* Three tiles at a time is a press that moves the rail visibly without
+   throwing away where the reader was. The tile's width is measured rather
+   than written down: it is 136, 160, 208 or 240 depending on the viewport,
+   and a constant here would be a fourth place to remember that. */
+const TILES_PER_PRESS = 3;
+
+/* How long a smooth scroll is given to finish, in ms. Only used to decide
+   whether the rail is still gliding somewhere — the browser owns the real
+   duration and does not report it. */
+const GLIDE = 300;
 
 interface RailState {
   overflow: boolean;
@@ -94,8 +101,72 @@ export default function MemberRail({
       if (!frame) frame = requestAnimationFrame(measure);
     };
 
+    /* A wheel is vertical and this rail is horizontal, so without this the
+       only way past the fade with a mouse is the two arrows. Browsers only
+       turn a vertical wheel sideways for a box that cannot scroll vertically
+       at all, which an `overflow-x: auto` scroller is not — its other axis
+       computes to auto too.
+
+       Turned only for a gesture that is actually vertical: a trackpad's
+       sideways swipe already arrives as deltaX and reaches the rail on its
+       own, and taking that over would fight it. And only while the rail has
+       somewhere to go in the direction asked for — at either end the event
+       is left alone, so a page scroll that happens to pass over the rail
+       carries on down the page instead of stopping dead on it. */
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    /* Where the rail is heading, and when it was last told. Moving it by the
+       delta as each notch arrived put the row exactly where the wheel said,
+       instantly, and then scroll-snap pulled it to the nearest tile — so a
+       gesture that should have glided landed as a run of jumps. Asking for
+       an absolute position and letting the browser animate to it gives one
+       glide, and lets snap settle the row once at the end instead of on
+       every notch.
+
+       The heading has to be remembered rather than read back off the rail,
+       because a notch landing mid-glide would otherwise be measured from
+       wherever the animation had got to and cut the one before it short.
+       Anything older than a glide is stale — an arrow, a drag or a Tab may
+       have moved the rail since — so it is re-seeded from where the rail
+       actually is. */
+    let target: number | null = null;
+    let targetAt = 0;
+
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1) return;
+
+      /* Firefox reports lines, and a page at a time is the rail's width.
+         Both are rare next to the pixels every other browser sends, but a
+         delta of 3 "lines" moved the rail three pixels. */
+      const step =
+        event.deltaMode === 1
+          ? event.deltaY * 16
+          : event.deltaMode === 2
+            ? event.deltaY * el.clientWidth
+            : event.deltaY;
+
+      const from = event.timeStamp - targetAt < GLIDE && target !== null ? target : el.scrollLeft;
+
+      /* Against where the rail is heading, not where it has got to: a notch
+         arriving on the last frame of a glide into the end is the same
+         gesture still running, not a fresh press on a rail with somewhere
+         left to go. The same pixel of slack the measurement takes, for the
+         same reason. */
+      if (step < 0 ? from <= 1 : from >= max - 1) return;
+
+      event.preventDefault();
+      target = Math.max(0, Math.min(max, from + step));
+      targetAt = event.timeStamp;
+      el.scrollTo({ left: target, behavior: reduced.matches ? "auto" : "smooth" });
+    };
+
     measure();
     el.addEventListener("scroll", schedule, { passive: true });
+    /* Not passive: the point is to prevent the page from taking the scroll. */
+    el.addEventListener("wheel", onWheel, { passive: false });
 
     /* Two things are watched, and they answer different questions.
 
@@ -114,6 +185,7 @@ export default function MemberRail({
     return () => {
       if (frame) cancelAnimationFrame(frame);
       el.removeEventListener("scroll", schedule);
+      el.removeEventListener("wheel", onWheel);
       observer.disconnect();
     };
   }, []);
@@ -121,11 +193,25 @@ export default function MemberRail({
   const nudge = (direction: 1 | -1) => {
     const el = scroller.current;
     if (!el) return;
+    const list = track.current;
+    const tile = list?.firstElementChild as HTMLElement | null;
+    /* A press never moves more than a screenful: on a narrow viewport three
+       tiles is further than the rail can show, and a jump past what was on
+       screen loses the reader's place. */
+    const stride =
+      list && tile
+        ? Math.min(
+            (tile.getBoundingClientRect().width +
+              (parseFloat(getComputedStyle(list).columnGap) || 0)) *
+              TILES_PER_PRESS,
+            el.clientWidth,
+          )
+        : el.clientWidth;
     /* CSS scroll-behavior does not reach a scrollBy that asks for smooth by
        name, so the preference is read here instead. */
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el.scrollBy({
-      left: direction * Math.min(STRIDE, el.clientWidth),
+      left: direction * stride,
       behavior: still ? "auto" : "smooth",
     });
   };
