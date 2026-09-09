@@ -13,6 +13,28 @@ const TILES_PER_PRESS = 3;
    duration and does not report it. */
 const GLIDE = 300;
 
+/* The gap in wheel events that ends a gesture, in ms. A wheel has no
+   equivalent of a finger lifting, so the only thing that says one push is
+   over is that the notches stopped coming. Long enough to hold across the
+   gaps inside one push — a mouse notch train runs about 50ms apart, a
+   trackpad's faster — and short enough that stopping and pushing again is
+   read as a second push rather than the same one. */
+const IDLE = 200;
+
+/* How long the rail keeps the page still after it last moved, in ms.
+
+   A wheel is not pushed once and held: it is flicked, and a reader working
+   along a rail flicks it several times with a beat between them. Those beats
+   are longer than IDLE, so each flick is a new push — and the flick that
+   arrives once the rail has run out of room would be handed to the page,
+   which is the lurch this is here to stop. Long enough to cover the beat
+   between two flicks of one movement, short enough that a reader who is
+   done with the rail and wants the page does not notice waiting. Measured
+   from the last time the rail actually moved, so a rail sitting at its end
+   releases the page on its own rather than holding it for as long as
+   someone keeps pushing. */
+const HANDOVER = 500;
+
 interface RailState {
   overflow: boolean;
   start: boolean;
@@ -109,11 +131,43 @@ export default function MemberRail({
 
        Turned only for a gesture that is actually vertical: a trackpad's
        sideways swipe already arrives as deltaX and reaches the rail on its
-       own, and taking that over would fight it. And only while the rail has
-       somewhere to go in the direction asked for — at either end the event
-       is left alone, so a page scroll that happens to pass over the rail
-       carries on down the page instead of stopping dead on it. */
+       own, and taking that over would fight it. */
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    /* One push of the wheel moves one thing. Whichever it is keeps it until
+       the push is over, and the other is held still for the duration.
+
+       Deciding per event instead — the rail while it has somewhere to go,
+       the page once it does not — is what made this unpleasant. A push that
+       ran the rail to its end handed the rest of itself to the page, so the
+       row stopped and the whole document lurched, out of one gesture the
+       reader meant as one movement. The same fault the other way round: a
+       push aimed at the page, passing over the rail on its way down, was
+       taken off the page and spent scrolling members sideways.
+
+       So the owner is chosen once, on the first notch of a push, and the
+       rest of that push goes the same way. The rail holds the push even
+       after it has run out of room — a rail at its end simply stops, which
+       is the thing the reader can see and understand — and it goes on
+       holding the ones that follow while HANDOVER says the reader is still
+       working this rail. Only a push that arrives after the rail has been
+       still for that long gives itself to the page. */
+    let owner: "rail" | "page" | null = null;
+    let lastWheelAt = 0;
+    /* When the row itself last moved — not when it last held an event. A
+       rail pinned at its end is not moving, so this stops being refreshed
+       and the page comes free, however long someone keeps pushing at it. */
+    let railMovedAt = 0;
+
+    /* When the page itself last moved. A push that began somewhere else on
+       the page and only wandered over the rail has to be recognised as
+       already spoken for: our own handler never saw its first notch, so
+       without this the notch that lands here looks like the start of a
+       fresh push and the rail would take it. */
+    let pageScrolledAt = 0;
+    const onPageScroll = (event: Event) => {
+      pageScrolledAt = event.timeStamp;
+    };
 
     /* Where the rail is heading, and when it was last told. Moving it by the
        delta as each notch arrived put the row exactly where the wheel said,
@@ -148,18 +202,35 @@ export default function MemberRail({
             ? event.deltaY * el.clientWidth
             : event.deltaY;
 
+      /* Against where the rail is heading, not where it has got to: a notch
+         arriving on the last frame of a glide is the same push still
+         running, and asking where the row happens to be mid-animation would
+         cut it short. */
       const from = event.timeStamp - targetAt < GLIDE && target !== null ? target : el.scrollLeft;
 
-      /* Against where the rail is heading, not where it has got to: a notch
-         arriving on the last frame of a glide into the end is the same
-         gesture still running, not a fresh press on a rail with somewhere
-         left to go. The same pixel of slack the measurement takes, for the
-         same reason. */
-      if (step < 0 ? from <= 1 : from >= max - 1) return;
+      if (event.timeStamp - lastWheelAt >= IDLE) {
+        /* A fresh push. The same pixel of slack the measurement takes, for
+           the same reason. */
+        const room = step < 0 ? from > 1 : from < max - 1;
+        const working = event.timeStamp - railMovedAt < HANDOVER;
+        owner =
+          event.timeStamp - pageScrolledAt < IDLE || (!room && !working) ? "page" : "rail";
+      }
+      lastWheelAt = event.timeStamp;
+
+      if (owner === "page") return;
 
       event.preventDefault();
-      target = Math.max(0, Math.min(max, from + step));
+
+      const next = Math.max(0, Math.min(max, from + step));
+      /* Nothing to do for a rail already against the end it is being pushed
+         at — but the push is still the rail's, and holding it here is the
+         whole point: the page stays where the reader left it. */
+      if (next === from) return;
+
+      target = next;
       targetAt = event.timeStamp;
+      railMovedAt = event.timeStamp;
       el.scrollTo({ left: target, behavior: reduced.matches ? "auto" : "smooth" });
     };
 
@@ -167,6 +238,7 @@ export default function MemberRail({
     el.addEventListener("scroll", schedule, { passive: true });
     /* Not passive: the point is to prevent the page from taking the scroll. */
     el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("scroll", onPageScroll, { passive: true });
 
     /* Two things are watched, and they answer different questions.
 
@@ -186,6 +258,7 @@ export default function MemberRail({
       if (frame) cancelAnimationFrame(frame);
       el.removeEventListener("scroll", schedule);
       el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("scroll", onPageScroll);
       observer.disconnect();
     };
   }, []);
