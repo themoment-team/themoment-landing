@@ -26,9 +26,11 @@ npm run dev
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run members:inspect` | 노션 멤버 DB의 프로퍼티 이름·타입 덤프 |
 
-환경변수는 [`.env.example`](.env.example)에 무엇이 왜 필요한지 적혀 있습니다. 셋 다 없어도
+환경변수는 [`.env.example`](.env.example)에 무엇이 왜 필요한지 적혀 있습니다. 하나도 없어도
 빌드와 실행은 됩니다 — 멤버는 하드코딩된 로스터로, 문의 폼은 "연결되지 않았습니다"로
-동작합니다.
+동작합니다. 다만 `NEXT_PUBLIC_SITE_URL`은 커스텀 도메인이 붙은 뒤로는 사실상 필수입니다:
+없으면 canonical · sitemap · OG 이미지가 전부 `*.vercel.app`을 가리켜서 두 호스트가 같은
+검색 결과를 두고 경쟁합니다.
 
 ## 구조
 

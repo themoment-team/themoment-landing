@@ -2,6 +2,7 @@ import Image from "next/image";
 import Reveal from "@/shared/ui/Reveal";
 import RevealGroup from "@/shared/ui/RevealGroup";
 import { BEAT, GROUP, beat } from "@/shared/lib/timing";
+import { WORK, type WorkItem } from "../model/projects";
 
 /* Four stills, stacked edge to edge with no gap between them, exactly as the
    comp has it. Each carries its own wordmark burnt into the artwork, so at
@@ -14,39 +15,6 @@ import { BEAT, GROUP, beat } from "@/shared/lib/timing";
    Two by two rather than the comp's full-width stack: four frames at the
    width of the column ran to nearly four screens, and the set reads as a
    set when it can be seen as one. */
-type WorkItem = {
-  src: string;
-  name: string;
-  note: string;
-  href?: string;
-};
-
-const WORK: WorkItem[] = [
-  {
-    src: "/work/hello-gsm.png",
-    name: "HelloGSM",
-    note: "광주소프트웨어마이스터고 입학지원시스템",
-    href: "https://www.hellogsm.kr",
-  },
-  {
-    src: "/work/every-gsm.png",
-    name: "EveryGSM",
-    note: "광주소프트웨어마이스터고등학교의 모든 프로젝트를 한곳에",
-    href: "https://www.every.datagsm.kr",
-  },
-  {
-    src: "/work/ready-gsm.png",
-    name: "ReadyGSM",
-    note: "광주소프트웨어마이스터고 학과체험 신청 서비스",
-    href: "https://readygsm-client-chskm2ptd-the-moment.vercel.app",
-  },
-  {
-    src: "/work/data-gsm.png",
-    name: "DataGSM",
-    note: "광주소프트웨어마이스터고등학교 OpenAPI 및 OAuth 플랫폼",
-  },
-];
-
 function ArrowRightIcon() {
   return (
     <svg
