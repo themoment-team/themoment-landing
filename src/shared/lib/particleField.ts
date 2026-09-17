@@ -16,6 +16,7 @@
      · the canvas no longer toggles on pointerdown — it sits under the page
        and never receives the click
      · the frame stops while the tab is hidden
+     · prefers-reduced-motion is no longer honoured (see REDUCED below)
 
    The palette is tuned for black and only black. On a light ground the
    grains disappear and the trail leaves permanent 1/255 smudges; see the
@@ -147,9 +148,12 @@ export function mountParticleField(
      does not survive that far. */
   const ctx: CanvasRenderingContext2D = context;
 
-  const REDUCED =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* The field no longer reads prefers-reduced-motion: the backdrop is the
+     page, and a still logo in its place was judged not worth the trade. Kept
+     as a flag rather than deleted so the still-frame path below stays
+     intact; flip this back to a matchMedia read to honour the setting
+     again. The page's CSS still respects the query on its own. */
+  const REDUCED: boolean = false;
 
   /* Everything the teardown has to reach. Populated as the field is built,
      because init() only runs once the icons have decoded — a destroy() that

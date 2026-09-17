@@ -3,9 +3,9 @@
 
    The resting state is the state the intro ENDS in — veil transparent,
    logo docked at the top, mark fully drawn. The animation is layered on top
-   of that, and only under `.run` with motion allowed. So a JavaScript error,
-   a stylesheet that never arrives, or a reduced-motion setting all leave a
-   perfectly normal page. Written the other way round — resting state
+   of that, and only under `.run`. So a JavaScript error or a stylesheet
+   that never arrives leaves a perfectly normal page. (prefers-reduced-motion
+   is deliberately not consulted — see the same note in particleField.ts.) Written the other way round — resting state
    "covered" — any one of those failures would leave the landing a black
    rectangle for good.
 
@@ -199,65 +199,59 @@
   to { transform: translateY(var(--dock-dy, calc(-50vh + var(--dock-y)))) scale(var(--dock-scale)); }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* ---- waiting for the field ----
-     Solid black, and nothing drawn on it, until the particle field behind
-     has painted its first frame. Opening swaps this for .run the moment it
-     has, so the mark is never drawn over an empty canvas.
+/* ---- waiting for the field ----
+   Solid black, and nothing drawn on it, until the particle field behind
+   has painted its first frame. Opening swaps this for .run the moment it
+   has, so the mark is never drawn over an empty canvas.
 
-     The animation is a dead man's switch, not the effect: it holds the black
-     and then clears it after two seconds whatever happens. Without it a
-     page whose JavaScript never ran — or whose field never painted — would
-     stay black for good, which is a far worse failure than an opening that
-     starts a beat early. It only ever finishes when something has gone
-     wrong; normally .holding is gone within a few hundred milliseconds.
-
-     Inside the reduced-motion query with everything else, so a visitor who
-     asked for no motion gets the finished page immediately rather than a
-     black screen and a wait. */
-  .holding .veil {
-    animation: tmHolding 2s linear both;
-  }
-  .holding .lockup {
-    opacity: 0;
-  }
-
-  /* drawing the mark */
-  .run .mark { animation: tmCard 0.62s cubic-bezier(0.2, 0.82, 0.26, 1) 0.05s both; }
-  .run .wMain { animation: tmDraw 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both; }
-  .run .wRing { animation: tmDraw 1.15s cubic-bezier(0.58, 0.04, 0.3, 1) 0.62s both; }
-  .run .wTick { animation: tmDraw 0.5s cubic-bezier(0.5, 0.05, 0.35, 1) 1.05s both; }
-  .run .mLine {
-    animation: tmDraw 0.58s cubic-bezier(0.5, 0.06, 0.35, 1) 1.28s both,
-      tmOut 0.34s ease 1.8s both;
-  }
-  .run .mFill { animation: tmLand 0.52s cubic-bezier(0.22, 1.32, 0.36, 1) 1.68s both; }
-
-  /* the wordmark, a letter at a time. Change the string in the component
-     and these nth-child delays have to change with it. */
-  .run .word span { animation: tmRise 0.72s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .run .word span:nth-child(1) { animation-delay: 1.62s; }
-  .run .word span:nth-child(2) { animation-delay: 1.658s; }
-  .run .word span:nth-child(3) { animation-delay: 1.696s; }
-  .run .word span:nth-child(4) { animation-delay: 1.734s; }
-  .run .word span:nth-child(5) { animation-delay: 1.772s; }
-  .run .word span:nth-child(6) { animation-delay: 1.81s; }
-  .run .word span:nth-child(7) { animation-delay: 1.848s; }
-  .run .word span:nth-child(8) { animation-delay: 1.886s; }
-  .run .word span:nth-child(9) { animation-delay: 1.924s; }
-  .run .word span:nth-child(10) { animation-delay: 1.962s; }
-
-  /* the spark riding the head of the arc — simply absent where offset-path
-     is not supported, rather than parked at the origin */
-  @supports (offset-path: path("M0 0 L1 1")) {
-    .run .head {
-      animation: tmRide 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both,
-        tmHead 1.14s linear 0.4s both;
-    }
-  }
-
-  /* docking — once the drawing is done, up to the top centre. The 2.75s
-     here is DOCK_AT in the component; they have to stay equal. */
-  .run .lockup { animation: tmDock 0.95s cubic-bezier(0.62, 0.02, 0.2, 1) 2.75s both; }
-  .run .veil { animation: tmVeilOut 0.8s ease 2.8s both; }
+   The animation is a dead man's switch, not the effect: it holds the black
+   and then clears it after two seconds whatever happens. Without it a
+   page whose JavaScript never ran — or whose field never painted — would
+   stay black for good, which is a far worse failure than an opening that
+   starts a beat early. It only ever finishes when something has gone
+   wrong; normally .holding is gone within a few hundred milliseconds. */
+.holding .veil {
+  animation: tmHolding 2s linear both;
 }
+.holding .lockup {
+  opacity: 0;
+}
+
+/* drawing the mark */
+.run .mark { animation: tmCard 0.62s cubic-bezier(0.2, 0.82, 0.26, 1) 0.05s both; }
+.run .wMain { animation: tmDraw 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both; }
+.run .wRing { animation: tmDraw 1.15s cubic-bezier(0.58, 0.04, 0.3, 1) 0.62s both; }
+.run .wTick { animation: tmDraw 0.5s cubic-bezier(0.5, 0.05, 0.35, 1) 1.05s both; }
+.run .mLine {
+  animation: tmDraw 0.58s cubic-bezier(0.5, 0.06, 0.35, 1) 1.28s both,
+    tmOut 0.34s ease 1.8s both;
+}
+.run .mFill { animation: tmLand 0.52s cubic-bezier(0.22, 1.32, 0.36, 1) 1.68s both; }
+
+/* the wordmark, a letter at a time. Change the string in the component
+   and these nth-child delays have to change with it. */
+.run .word span { animation: tmRise 0.72s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.run .word span:nth-child(1) { animation-delay: 1.62s; }
+.run .word span:nth-child(2) { animation-delay: 1.658s; }
+.run .word span:nth-child(3) { animation-delay: 1.696s; }
+.run .word span:nth-child(4) { animation-delay: 1.734s; }
+.run .word span:nth-child(5) { animation-delay: 1.772s; }
+.run .word span:nth-child(6) { animation-delay: 1.81s; }
+.run .word span:nth-child(7) { animation-delay: 1.848s; }
+.run .word span:nth-child(8) { animation-delay: 1.886s; }
+.run .word span:nth-child(9) { animation-delay: 1.924s; }
+.run .word span:nth-child(10) { animation-delay: 1.962s; }
+
+/* the spark riding the head of the arc — simply absent where offset-path
+   is not supported, rather than parked at the origin */
+@supports (offset-path: path("M0 0 L1 1")) {
+  .run .head {
+    animation: tmRide 1s cubic-bezier(0.62, 0.02, 0.34, 1) 0.4s both,
+      tmHead 1.14s linear 0.4s both;
+  }
+}
+
+/* docking — once the drawing is done, up to the top centre. The 2.75s
+   here is DOCK_AT in the component; they have to stay equal. */
+.run .lockup { animation: tmDock 0.95s cubic-bezier(0.62, 0.02, 0.2, 1) 2.75s both; }
+.run .veil { animation: tmVeilOut 0.8s ease 2.8s both; }

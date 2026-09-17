@@ -132,7 +132,6 @@ export default function MemberRail({
        Turned only for a gesture that is actually vertical: a trackpad's
        sideways swipe already arrives as deltaX and reaches the rail on its
        own, and taking that over would fight it. */
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     /* One push of the wheel moves one thing. Whichever it is keeps it until
        the push is over, and the other is held still for the duration.
@@ -231,7 +230,7 @@ export default function MemberRail({
       target = next;
       targetAt = event.timeStamp;
       railMovedAt = event.timeStamp;
-      el.scrollTo({ left: target, behavior: reduced.matches ? "auto" : "smooth" });
+      el.scrollTo({ left: target, behavior: "smooth" });
     };
 
     measure();
@@ -280,13 +279,7 @@ export default function MemberRail({
             el.clientWidth,
           )
         : el.clientWidth;
-    /* CSS scroll-behavior does not reach a scrollBy that asks for smooth by
-       name, so the preference is read here instead. */
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollBy({
-      left: direction * stride,
-      behavior: still ? "auto" : "smooth",
-    });
+    el.scrollBy({ left: direction * stride, behavior: "smooth" });
   };
 
   return (
