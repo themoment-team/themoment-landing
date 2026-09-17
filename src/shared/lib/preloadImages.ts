@@ -49,36 +49,72 @@ function absoluteSource(source: string): string {
   }
 }
 
+/* Whether an image is on screen at the moment the cover would lift, which
+   is the only moment this function exists to protect. The page has not been
+   scrolled yet when this runs, so the first viewport is the whole of what a
+   visitor can see. Zero-width images are excluded: an <img> in a collapsed
+   or not-yet-laid-out box is not something anyone is about to look at. */
+function isInFirstViewport(image: HTMLImageElement): boolean {
+  const rect = image.getBoundingClientRect();
+  return rect.width > 0 && rect.top < window.innerHeight && rect.bottom > 0;
+}
+
 /**
- * Eagerly loads every image currently rendered on the landing page, plus
- * sources for content that is mounted only after interaction (the inactive
- * member tabs). The promise settles after each image has decoded or failed.
+ * Holds the opening until everything visible behind the cover has decoded.
+ *
+ * It used to hold for every image on the page — four 3840x2160 project
+ * stills and thirty-three remote avatars — and the particle field is not
+ * even mounted until this settles, so the hero, which is the largest thing
+ * the first screen paints, could not begin drawing until the last avatar
+ * came back from GitHub. That is Largest Contentful Paint measured in
+ * whole seconds, on a screen whose content is a canvas and some type.
+ *
+ * None of that work bought anything. Every one of those images is a screen
+ * or more below the fold; by the time a visitor has scrolled to the member
+ * rail the browser has had seconds to fetch it on its own, which is what
+ * `loading="lazy"` is already asking it to do. So the wait is now only for
+ * what is actually on screen, and the rest is left to load the ordinary way
+ * — later, and out of the hero's way.
+ *
+ * The avatars that used to be passed in here are fetched by warmImages
+ * instead, once the opening is over and there is nothing left to hold.
  */
-export async function preloadImages(extraSources: readonly string[] = []): Promise<void> {
-  const rendered = Array.from(document.images);
+export async function preloadImages(): Promise<void> {
+  const visible = Array.from(document.images).filter(isInFirstViewport);
 
-  /* Native lazy loading would otherwise leave below-the-fold work and member
-     images untouched until after the intro. */
-  for (const image of rendered) image.loading = "eager";
+  /* Only for the ones being waited on. Forcing the rest eager — which is
+     what this used to do to every image on the page — puts thirty-odd
+     requests in front of the hero's own work for no benefit. */
+  for (const image of visible) image.loading = "eager";
 
-  const renderedSources = new Set(
-    rendered
-      .map((image) => image.currentSrc || image.src)
+  await Promise.all(visible.map(waitForImage));
+}
+
+/**
+ * Fetches everything below the fold into the browser cache, after the fact.
+ *
+ * The rails scroll sideways, so a tile three positions along is off screen
+ * and stays off screen until a finger moves it — at which point a lazy
+ * image starts its request and the portrait arrives visibly late. Preloading
+ * is the right answer to that. It was only ever in the wrong place: ahead of
+ * the first paint, where it held the hero, rather than after the opening,
+ * where there is nothing left to hold.
+ *
+ * Nothing awaits this and nothing renders differently for it. Every request
+ * goes out at low priority, so it fills the gap the page leaves behind it
+ * rather than competing with anything the visitor is looking at.
+ */
+export function warmImages(sources: readonly string[] = []): void {
+  const wanted = new Set(
+    [...Array.from(document.images).map((image) => image.currentSrc || image.src), ...sources]
       .filter(Boolean)
       .map(absoluteSource),
   );
 
-  const hiddenSources = Array.from(
-    new Set(extraSources.filter(Boolean).map(absoluteSource)),
-  ).filter((source) => !renderedSources.has(source));
-
-  const hidden = hiddenSources.map((source) => {
+  for (const source of wanted) {
     const image = new Image();
     image.decoding = "async";
-    const ready = waitForImage(image);
+    image.fetchPriority = "low";
     image.src = source;
-    return ready;
-  });
-
-  await Promise.all([...rendered.map(waitForImage), ...hidden]);
+  }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ParticleField from "@/shared/ui/ParticleField";
-import { preloadImages } from "@/shared/lib/preloadImages";
+import { preloadImages, warmImages } from "@/shared/lib/preloadImages";
 import { INTRO } from "@/shared/lib/timing";
 import IntroOverlay from "./IntroOverlay";
 
@@ -32,19 +32,32 @@ export default function Opening({ imageSources }: { imageSources: string[] }) {
   const [started, setStarted] = useState(false);
   const [assembled, setAssembled] = useState(false);
 
-  /* All visible images and the avatars behind inactive member tabs are
-     fetched and decoded while the solid-black cover is fixed in place. */
+  /* The images on the first screen are fetched and decoded while the
+     solid-black cover is fixed in place. Only those: the field behind the
+     hero is not even mounted until this resolves, so anything waited on
+     here is time the page spends black. Everything below the fold — the
+     four stills, the thirty-odd portraits — is warmed after the opening
+     instead, which is soon enough for content nobody has scrolled to. */
   useEffect(() => {
     let cancelled = false;
 
-    void preloadImages(imageSources).then(() => {
+    void preloadImages().then(() => {
       if (!cancelled) setImagesReady(true);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [imageSources]);
+  }, []);
+
+  /* Once the opening is over there is nothing left for a request to get in
+     front of, so the rest of the page's images are fetched now rather than
+     when a rail is dragged sideways onto a portrait that has not started
+     loading. Fire and forget: nothing renders differently for it. */
+  useEffect(() => {
+    if (!assembled) return;
+    warmImages(imageSources);
+  }, [assembled, imageSources]);
 
   useEffect(() => {
     if (!imagesReady || started) return;
